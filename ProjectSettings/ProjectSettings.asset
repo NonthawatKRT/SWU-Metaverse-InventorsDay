@@ -4,7 +4,7 @@
 PlayerSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 26
-  productGUID: b127ac91295ba8a47a177f3060ab7e43
+  productGUID: 64380e2ada6c9a140a89d0c6c3799342
   AndroidProfiler: 0
   AndroidFilterTouchesWhenObscured: 0
   AndroidEnableSustainedPerformanceMode: 0
@@ -920,10 +920,10 @@ PlayerSettings:
   apiCompatibilityLevel: 6
   activeInputHandler: 0
   windowsGamepadBackendHint: 0
-  cloudProjectId: 70809b0f-f01f-4209-87d1-a16f0eb695bc
+  cloudProjectId: c1d06776-b9d0-4462-b71f-952cdce4b510
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: SWU-Metaverse-InventorsDay
+  projectName: SWU-Metaverse-InventorsDay 2025-12-12_02-02-04
   organizationId: nonthawatz
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
