@@ -197,3 +197,6 @@ crashlytics-build.properties
 # Mac file setting
 
 .DS_Store
+.gitignore
+/Packages/manifest.json
+/Packages/packages-lock.json
