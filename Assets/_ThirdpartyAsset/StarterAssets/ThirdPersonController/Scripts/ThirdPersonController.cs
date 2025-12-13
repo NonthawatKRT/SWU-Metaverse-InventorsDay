@@ -1,4 +1,5 @@
 ﻿ using UnityEngine;
+ using PurrNet;
 #if ENABLE_INPUT_SYSTEM 
 using UnityEngine.InputSystem;
 #endif
@@ -12,7 +13,7 @@ namespace StarterAssets
 #if ENABLE_INPUT_SYSTEM 
     [RequireComponent(typeof(PlayerInput))]
 #endif
-    public class ThirdPersonController : MonoBehaviour
+    public class ThirdPersonController : NetworkBehaviour
     {
         [Header("Player")]
         [Tooltip("Move speed of the character in m/s")]
@@ -97,6 +98,26 @@ namespace StarterAssets
         private int _animIDJump;
         private int _animIDFreeFall;
         private int _animIDMotionSpeed;
+        public PlayerInput playerInput;
+        
+
+            protected override void OnSpawned()
+            {
+                base.OnSpawned();
+
+                enabled = isOwner;
+
+                if (!isOwner)
+                {
+                    Destroy(_mainCamera);
+                    Destroy(playerFollowCamera);
+                    playerInput.enabled = false;
+                }
+                else if (isOwner)
+                {
+                    playerInput.SwitchCurrentControlScheme("KeyboardMouse", Keyboard.current, Mouse.current);
+                }
+            }
 
 #if ENABLE_INPUT_SYSTEM 
         private PlayerInput _playerInput;
@@ -104,7 +125,8 @@ namespace StarterAssets
         private Animator _animator;
         private CharacterController _controller;
         private StarterAssetsInputs _input;
-        private GameObject _mainCamera;
+        public GameObject _mainCamera;
+        public GameObject playerFollowCamera;
 
         private const float _threshold = 0.01f;
 
