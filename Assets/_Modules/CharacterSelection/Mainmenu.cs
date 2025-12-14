@@ -36,7 +36,7 @@ public class Mainmenu : MonoBehaviour
 
     public void ConfirmButton()
     {
-        UnityEngine.SceneManagement.SceneManager.LoadScene("Mainmap");
+        // UnityEngine.SceneManagement.SceneManager.LoadScene("Mainmap");
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
     }
