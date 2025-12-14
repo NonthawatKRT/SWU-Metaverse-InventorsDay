@@ -129,7 +129,7 @@ namespace StarterAssets
             {
                 base.OnSpawned();
 
-                enabled = isOwner;
+                // enabled = isOwner;
 
                 if (!isOwner)
                 {
