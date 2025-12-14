@@ -99,6 +99,7 @@ namespace StarterAssets
         private int _animIDFreeFall;
         private int _animIDMotionSpeed;
         public PlayerInput playerInput;
+        public Updater updater;
         
 
             protected override void OnSpawned()
@@ -112,6 +113,7 @@ namespace StarterAssets
                     Destroy(_mainCamera);
                     Destroy(playerFollowCamera);
                     playerInput.enabled = false;
+                    updater.enabled = false;
                 }
                 else if (isOwner)
                 {
