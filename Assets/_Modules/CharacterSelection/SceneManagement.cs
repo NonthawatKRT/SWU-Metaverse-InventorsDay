@@ -15,29 +15,20 @@ public class SceneManagement : NetworkBehaviour
             isPublic = false,
             mode = LoadSceneMode.Single
         };
+        // This will automatically move all players to the new scene
         networkManager.sceneModule.LoadSceneAsync(sceneToChange, settings);
     }
 
     [ServerRpc(requireOwnership: false)]
     private void RequestSceneChange(RPCInfo info = default)
     {
-        var scene = SceneManager.GetSceneByName(sceneToChange);
-        if (!scene.isLoaded)
+        // Simply load the scene - PurrNet should handle moving all players
+        PurrSceneSettings settings = new()
         {
-            // Load the scene if it's not already loaded
-            PurrSceneSettings settings = new()
-            {
-                isPublic = false,
-                mode = LoadSceneMode.Single
-            };
-            networkManager.sceneModule.LoadSceneAsync(sceneToChange, settings);
-            return;
-        }
-
-        if(networkManager.sceneModule.TryGetSceneID(scene, out SceneID sceneID))
-        {
-            networkManager.scenePlayersModule.AddPlayerToScene(info.sender, sceneID);
-        }
+            isPublic = false,
+            mode = LoadSceneMode.Single
+        };
+        networkManager.sceneModule.LoadSceneAsync(sceneToChange, settings);
     }
 
     [ContextMenu("Request Scene Change")]
