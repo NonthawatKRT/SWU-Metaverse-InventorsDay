@@ -1,5 +1,6 @@
 ﻿ using UnityEngine;
  using PurrNet;
+using Cinemachine;
 #if ENABLE_INPUT_SYSTEM 
 using UnityEngine.InputSystem;
 #endif
@@ -76,9 +77,31 @@ namespace StarterAssets
         [Tooltip("For locking the camera position on all axis")]
         public bool LockCameraPosition = false;
 
+        [Header("Camera Zoom")]
+        [Tooltip("Reference to the Cinemachine Virtual Camera for zoom control")]
+        public CinemachineVirtualCamera virtualCamera;
+        
+        [Tooltip("Speed of zoom when scrolling")]
+        public float ZoomSpeed = 2.0f;
+        
+        [Tooltip("Minimum zoom distance")]
+        public float MinZoomDistance = 1.5f;
+        
+        [Tooltip("Maximum zoom distance")]
+        public float MaxZoomDistance = 10.0f;
+        
+        [Tooltip("How smoothly the zoom transitions")]
+        public float ZoomSmoothTime = 0.2f;
+
         // cinemachine
         private float _cinemachineTargetYaw;
         private float _cinemachineTargetPitch;
+        
+        // zoom
+        private float _currentZoomDistance;
+        private float _targetZoomDistance;
+        private float _zoomVelocity;
+        private CinemachineFramingTransposer _framingTransposer;
 
         // player
         private float _speed;
@@ -110,14 +133,17 @@ namespace StarterAssets
 
                 if (!isOwner)
                 {
-                    Destroy(_mainCamera);
-                    Destroy(playerFollowCamera);
-                    playerInput.enabled = false;
-                    updater.enabled = false;
+                    if (_mainCamera != null) Destroy(_mainCamera);
+                    if (playerFollowCamera != null) Destroy(playerFollowCamera);
+                    if (playerInput != null) playerInput.enabled = false;
+                    if (updater != null) updater.enabled = false;
                 }
                 else if (isOwner)
                 {
-                    playerInput.SwitchCurrentControlScheme("KeyboardMouse", Keyboard.current, Mouse.current);
+                    if (playerInput != null)
+                    {
+                        playerInput.SwitchCurrentControlScheme("KeyboardMouse", Keyboard.current, Mouse.current);
+                    }
                 }
             }
 
@@ -158,18 +184,46 @@ namespace StarterAssets
 
         private void Start()
         {
-            _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
+            if (CinemachineCameraTarget != null)
+            {
+                _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
+            }
+            else
+            {
+                Debug.LogError("CinemachineCameraTarget is null on " + gameObject.name);
+            }
             
             _hasAnimator = TryGetComponent(out _animator);
             _controller = GetComponent<CharacterController>();
             _input = GetComponent<StarterAssetsInputs>();
+            
+            if (_input == null)
+            {
+                Debug.LogError("StarterAssetsInputs component not found on " + gameObject.name);
+            }
+            
+            if (_controller == null)
+            {
+                Debug.LogError("CharacterController component not found on " + gameObject.name);
+            }
+            
 #if ENABLE_INPUT_SYSTEM 
             _playerInput = GetComponent<PlayerInput>();
+            if (_playerInput == null)
+            {
+                Debug.LogError("PlayerInput component not found on " + gameObject.name);
+            }
 #else
 			Debug.LogError( "Starter Assets package is missing dependencies. Please use Tools/Starter Assets/Reinstall Dependencies to fix it");
 #endif
 
-            AssignAnimationIDs();
+            // Initialize zoom
+            InitializeZoom();
+
+            if (_hasAnimator)
+            {
+                AssignAnimationIDs();
+            }
 
             // reset our timeouts on start
             _jumpTimeoutDelta = JumpTimeout;
@@ -178,8 +232,11 @@ namespace StarterAssets
 
         private void Update()
         {
+            if (!isOwner) return;
+            
             _hasAnimator = TryGetComponent(out _animator);
 
+            HandleZoom();
             JumpAndGravity();
             GroundedCheck();
             Move();
@@ -187,6 +244,7 @@ namespace StarterAssets
 
         private void LateUpdate()
         {
+            if (!isOwner) return;
             CameraRotation();
         }
 
@@ -216,6 +274,8 @@ namespace StarterAssets
 
         private void CameraRotation()
         {
+            if (_input == null || CinemachineCameraTarget == null) return;
+            
             // if there is an input and camera position is not fixed
             if (_input.look.sqrMagnitude >= _threshold && !LockCameraPosition)
             {
@@ -237,6 +297,8 @@ namespace StarterAssets
 
         private void Move()
         {
+            if (_input == null || _controller == null) return;
+            
             // set target speed based on move speed, sprint speed and if sprint is pressed
             float targetSpeed = _input.sprint ? SprintSpeed : MoveSpeed;
 
@@ -250,7 +312,7 @@ namespace StarterAssets
             float currentHorizontalSpeed = new Vector3(_controller.velocity.x, 0.0f, _controller.velocity.z).magnitude;
 
             float speedOffset = 0.1f;
-            float inputMagnitude = _input.analogMovement ? _input.move.magnitude : 1f;
+            float inputMagnitude = _input.move.magnitude;
 
             // accelerate or decelerate to target speed
             if (currentHorizontalSpeed < targetSpeed - speedOffset ||
@@ -370,6 +432,77 @@ namespace StarterAssets
             {
                 _verticalVelocity += Gravity * Time.deltaTime;
             }
+        }
+
+        private void InitializeZoom()
+        {
+            // Try to find the virtual camera if not assigned
+            if (virtualCamera == null)
+            {
+                virtualCamera = FindObjectOfType<CinemachineVirtualCamera>();
+                if (virtualCamera == null)
+                {
+                    Debug.LogWarning("No Cinemachine Virtual Camera found. Zoom functionality will not work.");
+                    return;
+                }
+            }
+
+            // Get the framing transposer component
+            _framingTransposer = virtualCamera.GetCinemachineComponent<CinemachineFramingTransposer>();
+            
+            if (_framingTransposer != null)
+            {
+                // Initialize zoom distances
+                _currentZoomDistance = _framingTransposer.m_CameraDistance;
+                _targetZoomDistance = _currentZoomDistance;
+                
+                // Ensure the current distance is within bounds
+                _targetZoomDistance = Mathf.Clamp(_targetZoomDistance, MinZoomDistance, MaxZoomDistance);
+                _currentZoomDistance = _targetZoomDistance;
+            }
+            else
+            {
+                Debug.LogWarning("Cinemachine Framing Transposer not found. Make sure your virtual camera uses a Framing Transposer.");
+            }
+        }
+
+        private void HandleZoom()
+        {
+            if (_framingTransposer == null || LockCameraPosition) 
+            {
+                if (_framingTransposer == null)
+                    Debug.LogWarning("Framing transposer is null - zoom won't work");
+                if (LockCameraPosition)
+                    Debug.LogWarning("Camera position is locked - zoom disabled");
+                return;
+            }
+
+            // Get scroll wheel input
+            float scrollInput = 0f;
+#if ENABLE_INPUT_SYSTEM
+            if (Mouse.current != null)
+            {
+                scrollInput = Mouse.current.scroll.ReadValue().y;
+            }
+#else
+            scrollInput = Input.GetAxis("Mouse ScrollWheel");
+#endif
+
+            // Update target zoom distance based on scroll input
+            if (Mathf.Abs(scrollInput) > 0.01f)
+            {
+                Debug.Log($"Zoom input detected: {scrollInput}");
+                _targetZoomDistance -= scrollInput * ZoomSpeed * 0.1f;
+                _targetZoomDistance = Mathf.Clamp(_targetZoomDistance, MinZoomDistance, MaxZoomDistance);
+                Debug.Log($"New target zoom distance: {_targetZoomDistance}");
+            }
+
+            // Smoothly interpolate to target zoom distance
+            _currentZoomDistance = Mathf.SmoothDamp(_currentZoomDistance, _targetZoomDistance, 
+                ref _zoomVelocity, ZoomSmoothTime);
+
+            // Apply the zoom to the virtual camera
+            _framingTransposer.m_CameraDistance = _currentZoomDistance;
         }
 
         private static float ClampAngle(float lfAngle, float lfMin, float lfMax)
