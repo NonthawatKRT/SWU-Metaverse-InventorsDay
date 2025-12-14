@@ -11,6 +11,8 @@ public class SceneManagement : NetworkBehaviour
 {
     public GameObject WaitingforPlayersUI;
     [PurrScene] public string sceneToChange;
+    [Header("Debug Settings")]
+    public bool allowSinglePlayerTesting = false;
     
     private LobbyManager GetLobbyManager()
     {
@@ -19,6 +21,113 @@ public class SceneManagement : NetworkBehaviour
     }
     
     private HashSet<PlayerID> readyPlayers = new HashSet<PlayerID>();
+    private HashSet<PlayerID> connectedPlayers = new HashSet<PlayerID>();
+    private bool hasTriedToRegister = false;
+
+    // Call this when a player joins the character selection scene
+    [ServerRpc(requireOwnership: false)]
+    public void RegisterPlayerServerRpc(RPCInfo info = default)
+    {
+        if (connectedPlayers.Contains(info.sender))
+        {
+            Debug.LogWarning($"[SceneManagement] Player {info.sender} already registered! Ignoring duplicate registration.");
+            return;
+        }
+        
+        connectedPlayers.Add(info.sender);
+        Debug.Log($"[SceneManagement] Player {info.sender} registered. Total connected: {connectedPlayers.Count}");
+        
+        // List all connected players for debugging
+        Debug.Log($"[SceneManagement] All connected players: [{string.Join(", ", connectedPlayers)}]");
+        
+        // Update UI for all clients
+        UpdateReadyStatusClientRpc(readyPlayers.Count, connectedPlayers.Count);
+    }
+    
+    // Call this when a player leaves
+    [ServerRpc(requireOwnership: false)]
+    public void UnregisterPlayerServerRpc(RPCInfo info = default)
+    {
+        connectedPlayers.Remove(info.sender);
+        readyPlayers.Remove(info.sender); // Also remove from ready list
+        Debug.Log($"[SceneManagement] Player {info.sender} unregistered. Total connected: {connectedPlayers.Count}");
+        
+        // Update UI for all clients
+        UpdateReadyStatusClientRpc(readyPlayers.Count, connectedPlayers.Count);
+    }
+
+    public void RegisterPlayer()
+    {
+        if (hasTriedToRegister)
+        {
+            Debug.LogWarning("[SceneManagement] Player registration already attempted, skipping duplicate registration");
+            return;
+        }
+        
+        if (isSpawned)
+        {
+            Debug.Log($"[SceneManagement] Registering player for character selection. IsServer: {isServer}, IsOwner: {isOwner}");
+            hasTriedToRegister = true;
+            RegisterPlayerServerRpc();
+        }
+        else
+        {
+            Debug.LogWarning("[SceneManagement] Cannot register - not spawned yet, will retry...");
+            // Retry after a short delay
+            Invoke(nameof(RegisterPlayer), 0.2f);
+        }
+    }
+    
+    [ContextMenu("Register This Player")]
+    public void ManualRegisterPlayer()
+    {
+        RegisterPlayer();
+    }
+    
+    // Optional: Call this if you want to clear all player registrations
+    [ContextMenu("Reset All Players")]
+    public void ResetAllPlayers()
+    {
+        if (isServer)
+        {
+            ResetAllPlayersServerRpc();
+            ResetRegistrationFlagsRpc(); // Also reset flags on all clients
+        }
+    }
+    
+    [ContextMenu("Clean Duplicate Players")]
+    public void CleanDuplicatePlayers()
+    {
+        if (isServer)
+        {
+            // Keep only unique players (this is a debug helper)
+            var uniqueConnected = new HashSet<PlayerID>(connectedPlayers);
+            var uniqueReady = new HashSet<PlayerID>(readyPlayers);
+            
+            connectedPlayers = uniqueConnected;
+            readyPlayers = uniqueReady;
+            
+            Debug.Log($"[SceneManagement] Cleaned duplicates. Connected: {connectedPlayers.Count}, Ready: {readyPlayers.Count}");
+            UpdateReadyStatusClientRpc(readyPlayers.Count, connectedPlayers.Count);
+        }
+    }
+    
+    [ServerRpc(requireOwnership: false)]
+    public void ResetAllPlayersServerRpc()
+    {
+        connectedPlayers.Clear();
+        readyPlayers.Clear();
+        Debug.Log("[SceneManagement] All players cleared from server");
+        UpdateReadyStatusClientRpc(0, 0);
+    }
+    
+    // Reset registration flag (call this on clients too)
+    [ObserversRpc]
+    private void ResetRegistrationFlagsRpc()
+    {
+        hasTriedToRegister = false;
+        Debug.Log("[SceneManagement] Reset registration flags on all clients");
+    }
 
     private void Awake()
     {
@@ -32,6 +141,37 @@ public class SceneManagement : NetworkBehaviour
         if (!isSpawned)
         {
             Debug.LogWarning("[SceneManagement] NetworkBehaviour is not spawned! Make sure this GameObject has a NetworkIdentity and is spawned by the NetworkManager.");
+        }
+        
+        // Auto-register this player when they enter the character selection scene
+        if (!hasTriedToRegister)
+        {
+            StartCoroutine(WaitAndRegisterPlayer());
+        }
+    }
+    
+    private System.Collections.IEnumerator WaitAndRegisterPlayer()
+    {
+        // Wait for networking to be properly initialized
+        yield return new WaitForSeconds(0.5f);
+        
+        // Keep trying until we're spawned (max 10 seconds)
+        float timeout = 10f;
+        while (!isSpawned && timeout > 0)
+        {
+            Debug.Log("[SceneManagement] Waiting for spawn before registering...");
+            yield return new WaitForSeconds(0.2f);
+            timeout -= 0.2f;
+        }
+        
+        if (isSpawned)
+        {
+            Debug.Log("[SceneManagement] Network spawned, attempting auto-registration");
+            RegisterPlayer();
+        }
+        else
+        {
+            Debug.LogWarning("[SceneManagement] Timeout waiting for spawn. Registration will happen during ready marking as fallback.");
         }
     }
 
@@ -52,7 +192,16 @@ public class SceneManagement : NetworkBehaviour
             Debug.LogWarning("[SceneManagement] No Lobby Manager found, proceeding without it");
         }
         
-        SceneManager.LoadSceneAsync(sceneToChange);
+        if (isServer)
+        {
+            // Tell ALL clients to change scenes
+            ChangeSceneForAllPlayersRpc();
+        }
+        else
+        {
+            // If not server, just change locally (fallback)
+            SceneManager.LoadSceneAsync(sceneToChange);
+        }
     }
 
     [ServerRpc(requireOwnership: false)]
@@ -72,7 +221,8 @@ public class SceneManagement : NetworkBehaviour
             Debug.LogWarning("[SceneManagement] No Lobby Manager found, proceeding without it");
         }
         
-        SceneManager.LoadSceneAsync(sceneToChange);
+        // Tell ALL clients to change scenes (including server)
+        ChangeSceneForAllPlayersRpc();
     }
 
     [ContextMenu("Request Scene Change")]
@@ -106,13 +256,31 @@ public class SceneManagement : NetworkBehaviour
     [ServerRpc(requireOwnership: false)]
     private void MarkPlayerReadyServerRpc(RPCInfo info = default)
     {
-        // Add player to ready list
+        Debug.Log($"[SceneManagement] MarkPlayerReady called by Player ID: {info.sender}");
+        
+        // Auto-register if not registered (fallback registration)
+        if (!connectedPlayers.Contains(info.sender))
+        {
+            Debug.Log($"[SceneManagement] Player {info.sender} not registered! Auto-registering now...");
+            connectedPlayers.Add(info.sender);
+            Debug.Log($"[SceneManagement] Player {info.sender} auto-registered during ready marking");
+        }
+        
+        // Add player to ready list (prevent duplicates)
+        if (readyPlayers.Contains(info.sender))
+        {
+            Debug.LogWarning($"[SceneManagement] Player {info.sender} already marked ready! Ignoring.");
+            return;
+        }
+        
         readyPlayers.Add(info.sender);
         
-        // Get connected players from NetworkManager
+        // Get connected players count
         int totalConnected = GetConnectedPlayersCount();
         
         Debug.Log($"[SceneManagement] Player {info.sender} marked ready. Ready: {readyPlayers.Count}/{totalConnected}");
+        Debug.Log($"[SceneManagement] Connected players: [{string.Join(", ", connectedPlayers)}]");
+        Debug.Log($"[SceneManagement] Ready players: [{string.Join(", ", readyPlayers)}]");
         
         // Notify all clients about ready status update
         UpdateReadyStatusClientRpc(readyPlayers.Count, totalConnected);
@@ -141,53 +309,68 @@ public class SceneManagement : NetworkBehaviour
     private bool AreAllPlayersReady()
     {
         int totalConnected = GetConnectedPlayersCount();
-        return readyPlayers.Count >= totalConnected && totalConnected > 0;
+        bool allReady = readyPlayers.Count >= totalConnected && totalConnected > 0;
+        
+        Debug.Log($"[SceneManagement] Ready check: {readyPlayers.Count}/{totalConnected} ready. All ready: {allReady}");
+        
+        // Safety check: require at least 1 player to be ready and don't allow single player to trigger scene change unless explicitly configured
+        if (readyPlayers.Count == 0)
+        {
+            Debug.Log("[SceneManagement] No players ready, scene change not allowed");
+            return false;
+        }
+        
+        // If we detect only 1 connected player, check if single player testing is enabled
+        if (totalConnected == 1 && readyPlayers.Count == 1)
+        {
+            if (allowSinglePlayerTesting)
+            {
+                Debug.Log("[SceneManagement] Single player testing enabled - allowing scene change with 1 player");
+                return true;
+            }
+            else
+            {
+                Debug.LogWarning("[SceneManagement] Only detecting 1 player. Enable 'allowSinglePlayerTesting' in inspector for single player testing.");
+                return false;
+            }
+        }
+        
+        return allReady;
     }
 
     private int GetConnectedPlayersCount()
     {
-        if (networkManager == null) return 0;
-        
-        // Try different ways to get player count from PurrNet
-        try
+        // Filter out server from player count
+        int realPlayerCount = 0;
+        foreach (var playerId in connectedPlayers)
         {
-            // Method 1: Check if there's a players collection
-            var playersField = networkManager.GetType().GetField("players", 
-                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            
-            if (playersField != null)
+            // Skip server IDs - they're not real players
+            string playerIdStr = playerId.ToString();
+            if (!playerIdStr.Contains("Server") && !playerIdStr.Equals("Server"))
             {
-                var players = playersField.GetValue(networkManager);
-                if (players is System.Collections.ICollection collection)
-                {
-                    return collection.Count;
-                }
-            }
-            
-            // Method 2: Use lobby manager if available
-            LobbyManager lobby = GetLobbyManager();
-            if (lobby != null)
-            {
-                var lobbyPlayersField = lobby.GetType().GetField("connectedPlayers", 
-                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                
-                if (lobbyPlayersField != null)
-                {
-                    var lobbyPlayers = lobbyPlayersField.GetValue(lobby);
-                    if (lobbyPlayers is System.Collections.ICollection lobbyCollection)
-                    {
-                        return lobbyCollection.Count;
-                    }
-                }
+                realPlayerCount++;
             }
         }
-        catch (System.Exception ex)
+        
+        Debug.Log($"[SceneManagement] Total registered: {connectedPlayers.Count}, Real players (excluding server): {realPlayerCount}");
+        
+        // If no real players registered yet, try fallback
+        if (realPlayerCount == 0)
         {
-            Debug.LogWarning($"[SceneManagement] Failed to get player count: {ex.Message}");
+            Debug.LogWarning("[SceneManagement] No real players registered yet!");
+            
+            // Fallback: assume at least 1 player if we have ready players
+            if (readyPlayers.Count > 0)
+            {
+                Debug.Log($"[SceneManagement] Using ready player count as fallback: {readyPlayers.Count}");
+                return readyPlayers.Count;
+            }
+            
+            Debug.LogWarning("[SceneManagement] No player data available, defaulting to 1");
+            return 1;
         }
         
-        // Fallback: assume at least 1 if we have any ready players
-        return readyPlayers.Count > 0 ? Mathf.Max(1, readyPlayers.Count) : 1;
+        return realPlayerCount;
     }
 
     private void ChangeSceneWhenAllReady()
@@ -207,8 +390,16 @@ public class SceneManagement : NetworkBehaviour
                 Debug.LogWarning("[SceneManagement] No Lobby Manager found, proceeding without it");
             }
             
-            SceneManager.LoadSceneAsync(sceneToChange);
+            // Tell ALL clients to change scenes
+            ChangeSceneForAllPlayersRpc();
         }
+    }
+
+    [ObserversRpc]
+    private void ChangeSceneForAllPlayersRpc()
+    {
+        Debug.Log("[SceneManagement] Received command to change scene for all players");
+        SceneManager.LoadSceneAsync(sceneToChange);
     }
 
     private void UpdateReadyUI(int readyCount, int totalCount)
@@ -267,97 +458,98 @@ public class SceneManagement : NetworkBehaviour
         LogAllPlayersInScene();
     }
 
+    [ContextMenu("Force Scene Change (Testing Only)")]
+    public void ForceSceneChange()
+    {
+        if (isServer)
+        {
+            Debug.Log("[SceneManagement] FORCE: Scene change triggered manually for testing");
+            ChangeSceneForAllPlayersRpc();
+        }
+        else
+        {
+            Debug.Log("[SceneManagement] FORCE: Requesting scene change from client");
+            RequestSceneChange();
+        }
+    }
+
+    [ContextMenu("Debug Ready Status")]
+    public void DebugReadyStatus()
+    {
+        int totalConnected = GetConnectedPlayersCount();
+        bool allReady = AreAllPlayersReady();
+        
+        Debug.Log("=== READY STATUS DEBUG ===");
+        Debug.Log($"Ready Players: {readyPlayers.Count}");
+        Debug.Log($"Total Connected: {totalConnected}");
+        Debug.Log($"All Ready: {allReady}");
+        Debug.Log($"Is Server: {isServer}");
+        Debug.Log($"Is Spawned: {isSpawned}");
+        
+        Debug.Log("Connected Players:");
+        foreach (var player in connectedPlayers)
+        {
+            Debug.Log($"  Connected: {player}");
+        }
+        
+        Debug.Log("Ready Players:");
+        foreach (var player in readyPlayers)
+        {
+            Debug.Log($"  Ready: {player}");
+        }
+        Debug.Log("=== END DEBUG ===");
+    }
+    
+    // Utility methods for UI or other scripts
+    public int GetReadyPlayerCount() => readyPlayers.Count;
+    public int GetTotalPlayerCount() => GetConnectedPlayersCount();
+    public bool IsPlayerReady(PlayerID playerId) => readyPlayers.Contains(playerId);
+    public bool IsPlayerConnected(PlayerID playerId) => connectedPlayers.Contains(playerId);
+    
+    // Get readable status for UI
+    public string GetReadyStatusText()
+    {
+        return $"Players Ready: {readyPlayers.Count}/{GetConnectedPlayersCount()}";
+    }
+    
+    // Check if current player is registered (for UI)
+    public bool IsCurrentPlayerRegistered()
+    {
+        return hasTriedToRegister;
+    }
+    
+    [ContextMenu("Check Registration Status")]
+    public void CheckRegistrationStatus()
+    {
+        Debug.Log($"[SceneManagement] Has tried to register: {hasTriedToRegister}");
+        Debug.Log($"[SceneManagement] Is Owner: {isOwner}, Is Server: {isServer}, Is Spawned: {isSpawned}");
+    }
+
     public void LogAllPlayersInScene()
     {
-        Debug.Log("=== ALL PLAYERS IN SCENE ===");
+        Debug.Log("=== ALL PLAYERS IN SCENE (Manual Tracking) ===");
         
-        if (networkManager == null)
+        Debug.Log($"[SceneManagement] Total tracked: {connectedPlayers.Count}");
+        int index = 0;
+        int realPlayerCount = 0;
+        foreach (var playerId in connectedPlayers)
         {
-            Debug.LogWarning("[SceneManagement] NetworkManager is null - cannot get player list");
-            return;
+            var isReady = readyPlayers.Contains(playerId);
+            string playerIdStr = playerId.ToString();
+            bool isServer = playerIdStr.Contains("Server") || playerIdStr.Equals("Server");
+            
+            Debug.Log($"  Player {index}: ID={playerId}, Ready={isReady}, IsServer={isServer}");
+            
+            if (!isServer) realPlayerCount++;
+            index++;
         }
-
-        try
+        
+        Debug.Log($"[SceneManagement] Real Players (excluding server): {realPlayerCount}");
+        Debug.Log($"[SceneManagement] Ready Players: {readyPlayers.Count}/{realPlayerCount}");
+        
+        if (readyPlayers.Count > 0)
         {
-            // Method 1: Try to get players from NetworkManager
-            var playersField = networkManager.GetType().GetField("players", 
-                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            
-            if (playersField != null)
-            {
-                var players = playersField.GetValue(networkManager);
-                if (players is System.Collections.IDictionary playerDict)
-                {
-                    Debug.Log($"[SceneManagement] Found {playerDict.Count} players in NetworkManager:");
-                    int index = 0;
-                    foreach (System.Collections.DictionaryEntry entry in playerDict)
-                    {
-                        var playerId = entry.Key;
-                        var isReady = readyPlayers.Contains((PlayerID)playerId);
-                        Debug.Log($"  Player {index}: ID={playerId}, Ready={isReady}");
-                        index++;
-                    }
-                    Debug.Log($"[SceneManagement] Ready Players: {readyPlayers.Count}/{playerDict.Count}");
-                    return;
-                }
-                else if (players is System.Collections.ICollection playerCollection)
-                {
-                    Debug.Log($"[SceneManagement] Found {playerCollection.Count} players in NetworkManager:");
-                    int index = 0;
-                    foreach (var player in playerCollection)
-                    {
-                        var isReady = readyPlayers.Contains((PlayerID)player);
-                        Debug.Log($"  Player {index}: ID={player}, Ready={isReady}");
-                        index++;
-                    }
-                    Debug.Log($"[SceneManagement] Ready Players: {readyPlayers.Count}/{playerCollection.Count}");
-                    return;
-                }
-            }
-
-            // Method 2: Try lobby manager
-            LobbyManager lobby = GetLobbyManager();
-            if (lobby != null)
-            {
-                var lobbyPlayersField = lobby.GetType().GetField("connectedPlayers", 
-                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                
-                if (lobbyPlayersField != null)
-                {
-                    var lobbyPlayers = lobbyPlayersField.GetValue(lobby);
-                    if (lobbyPlayers is System.Collections.ICollection lobbyCollection)
-                    {
-                        Debug.Log($"[SceneManagement] Found {lobbyCollection.Count} players in LobbyManager:");
-                        int index = 0;
-                        foreach (var player in lobbyCollection)
-                        {
-                            var isReady = readyPlayers.Contains((PlayerID)player);
-                            Debug.Log($"  Player {index}: ID={player}, Ready={isReady}");
-                            index++;
-                        }
-                        Debug.Log($"[SceneManagement] Ready Players: {readyPlayers.Count}/{lobbyCollection.Count}");
-                        return;
-                    }
-                }
-            }
-
-            // Method 3: Just show ready players if we can't find the full list
-            Debug.Log($"[SceneManagement] Could not access full player list. Ready players only:");
-            int readyIndex = 0;
-            foreach (var readyPlayer in readyPlayers)
-            {
-                Debug.Log($"  Ready Player {readyIndex}: ID={readyPlayer}");
-                readyIndex++;
-            }
-            Debug.Log($"[SceneManagement] Total ready: {readyPlayers.Count}");
-            
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogError($"[SceneManagement] Error logging players: {ex.Message}");
-            
-            // Fallback: just show what we know
-            Debug.Log($"[SceneManagement] Fallback - Ready players: {readyPlayers.Count}");
+            Debug.Log("[SceneManagement] Ready Player IDs:");
             foreach (var readyPlayer in readyPlayers)
             {
                 Debug.Log($"  Ready: {readyPlayer}");
