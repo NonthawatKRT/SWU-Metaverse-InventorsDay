@@ -1,8 +1,7 @@
 using System.Collections;
-using UnityEngine;
-using FishNet.Object; // FishNet NetworkBehaviour
+using UnityEngine;// FishNet NetworkBehaviour
 
-public class SkyTrainMovement : NetworkBehaviour
+public class SkyTrainMovement : MonoBehaviour
 {
     public Transform[] checkpoints; // Assign the square checkpoints
     public float speed = 5f; // Train movement speed
@@ -11,7 +10,7 @@ public class SkyTrainMovement : NetworkBehaviour
 
     private void Update()
     {
-        if (!IsServer) return; // Server-authoritative movement
+        //if (!IsServer) return; // Server-authoritative movement
         MoveTrain();
     }
 
@@ -40,7 +39,7 @@ public class SkyTrainMovement : NetworkBehaviour
         }
     }
 
-    [ObserversRpc]
+    //[ObserversRpc]
     private void RpcHideDetails(bool hide)
     {
         foreach (GameObject detail in detailObjects)

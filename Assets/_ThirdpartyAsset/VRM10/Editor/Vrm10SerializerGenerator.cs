@@ -35,7 +35,7 @@ namespace UniVRM10
         }
 
         private const string Vrm10SpecDir = "vrm-specification/specification";
-        private const string Vrm10FormatGeneratedDir = "Assets/VRM10/Runtime/Format";
+        private const string Vrm10FormatGeneratedDir = "Packages/VRM10/Runtime/Format";
 
         public static void Run(bool debug)
         {
@@ -85,6 +85,14 @@ namespace UniVRM10
                 new GenerateInfo(
                     $"{Vrm10SpecDir}/VRMC_springBone_extended_collider-1.0/schema/VRMC_springBone_extended_collider.schema.json",
                     $"{Vrm10FormatGeneratedDir}/SpringBoneExtendedCollider"
+                ),
+
+                // VRMC_springBone_limit-1.0
+                // (experimental)
+                // https://github.com/0b5vr/vrm-specification/tree/springBone-limit
+                new GenerateInfo(
+                    $"{Vrm10SpecDir}/VRMC_springBone_limit-1.0/schema/VRMC_springBone_limit.schema.json",
+                    $"{Vrm10FormatGeneratedDir}/SpringBoneLimit"
                 ),
             };
 
