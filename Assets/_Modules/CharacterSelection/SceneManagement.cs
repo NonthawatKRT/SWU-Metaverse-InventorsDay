@@ -5,59 +5,86 @@ using PurrNet.Modules;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using System.Linq;
+using PurrLobby;
 
 public class SceneManagement : NetworkBehaviour
 {
     public GameObject WaitingforPlayersUI;
     [PurrScene] public string sceneToChange;
+    [SerializeField] private LobbyManager lobbyManager;
     
     private HashSet<PlayerID> readyPlayers = new HashSet<PlayerID>();
     private HashSet<PlayerID> connectedPlayers = new HashSet<PlayerID>();
     private int totalPlayers = 0;
 
+    private void Awake()
+    {
+        Debug.Log($"[SceneManagement] Awake - GameObject: {gameObject.name}");
+    }
+
+    private void Start()
+    {
+        Debug.Log($"[SceneManagement] Start - IsSpawned: {isSpawned}, IsServer: {isServer}, IsOwner: {isOwner}");
+        
+        if (!isSpawned)
+        {
+            Debug.LogWarning("[SceneManagement] NetworkBehaviour is not spawned! Make sure this GameObject has a NetworkIdentity and is spawned by the NetworkManager.");
+        }
+    }
+
     [ContextMenu("Change Scene")]
 
     public void ChangeScene()
     {
-        PurrSceneSettings settings = new()
+        Debug.Log($"[SceneManagement] ChangeScene called for scene: {sceneToChange}");
+        
+        if (lobbyManager != null)
         {
-            isPublic = false,
-            mode = LoadSceneMode.Single
-        };
-        networkManager.sceneModule.LoadSceneAsync(sceneToChange, settings);
+            lobbyManager.SetLobbyStarted();
+        }
+        
+        SceneManager.LoadSceneAsync(sceneToChange);
     }
 
     [ServerRpc(requireOwnership: false)]
     private void RequestSceneChange(RPCInfo info = default)
     {
-        var scene = SceneManager.GetSceneByName(sceneToChange);
-        if (!scene.isLoaded)
+        Debug.Log($"[SceneManagement] Server received scene change request from player: {info.sender}");
+        
+        // Use the lobby system to transition all players
+        if (lobbyManager != null)
         {
-            // Load the scene if it's not already loaded
-            PurrSceneSettings settings = new()
-            {
-                isPublic = false,
-                mode = LoadSceneMode.Single
-            };
-            networkManager.sceneModule.LoadSceneAsync(sceneToChange, settings);
-            return;
+            lobbyManager.SetLobbyStarted();
         }
-
-        if(networkManager.sceneModule.TryGetSceneID(scene, out SceneID sceneID))
-        {
-            networkManager.scenePlayersModule.AddPlayerToScene(info.sender, sceneID);
-        }
+        
+        SceneManager.LoadSceneAsync(sceneToChange);
     }
 
     [ContextMenu("Request Scene Change")]
     public void RequestSceneChangeClient()
     {
+        Debug.Log($"[SceneManagement] RequestSceneChangeClient called. IsSpawned: {isSpawned}, IsServer: {isServer}, IsOwner: {isOwner}");
+        
+        if (!isSpawned)
+        {
+            Debug.LogError("[SceneManagement] Cannot request scene change - NetworkBehaviour is not spawned!");
+            return;
+        }
+        
         RequestSceneChange();
     }
 
     // Call this method when a player clicks "Ready" button
     public void MarkPlayerReady()
     {
+        Debug.Log($"[SceneManagement] MarkPlayerReady called. IsSpawned: {isSpawned}, IsServer: {isServer}, IsOwner: {isOwner}");
+        
+        if (!isSpawned)
+        {
+            Debug.LogError("[SceneManagement] Cannot mark player ready - NetworkBehaviour is not spawned!");
+            return;
+        }
+        
         MarkPlayerReadyServerRpc();
     }
 
@@ -115,12 +142,14 @@ public class SceneManagement : NetworkBehaviour
     {
         if (AreAllPlayersReady())
         {
-            PurrSceneSettings settings = new()
+            Debug.Log("[SceneManagement] All players ready! Transitioning to game scene...");
+            
+            if (lobbyManager != null)
             {
-                isPublic = false,
-                mode = LoadSceneMode.Single
-            };
-            networkManager.sceneModule.LoadSceneAsync(sceneToChange, settings);
+                lobbyManager.SetLobbyStarted();
+            }
+            
+            SceneManager.LoadSceneAsync(sceneToChange);
         }
     }
 
@@ -146,6 +175,14 @@ public class SceneManagement : NetworkBehaviour
     // Optional: Remove player from ready list
     public void MarkPlayerNotReady()
     {
+        Debug.Log($"[SceneManagement] MarkPlayerNotReady called. IsSpawned: {isSpawned}, IsServer: {isServer}, IsOwner: {isOwner}");
+        
+        if (!isSpawned)
+        {
+            Debug.LogError("[SceneManagement] Cannot mark player not ready - NetworkBehaviour is not spawned!");
+            return;
+        }
+        
         MarkPlayerNotReadyServerRpc();
     }
 
@@ -160,6 +197,14 @@ public class SceneManagement : NetworkBehaviour
     // Call this when player joins the scene
     public void RegisterPlayer()
     {
+        Debug.Log($"[SceneManagement] RegisterPlayer called. IsSpawned: {isSpawned}, IsServer: {isServer}, IsOwner: {isOwner}");
+        
+        if (!isSpawned)
+        {
+            Debug.LogError("[SceneManagement] Cannot register player - NetworkBehaviour is not spawned!");
+            return;
+        }
+        
         RegisterPlayerServerRpc();
     }
 }
