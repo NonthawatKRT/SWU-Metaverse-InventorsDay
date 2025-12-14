@@ -8,4 +8,19 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
+  - enabled: 1
+    path: Assets/_Project/Scenes/LobbySample.unity
+    guid: f200f46cefed9dd4a9b693b291045b26
+  - enabled: 1
+    path: Assets/_Project/Scenes/NetworkedScene.unity
+    guid: f3c50b671c75f9c4bb448e3ee5f87618
+  - enabled: 1
+    path: Assets/_Project/Scenes/CharacterSelect.unity
+    guid: 6f5060d0a2284d843a4c107b7b6b3fa7
+  - enabled: 1
+    path: Assets/_Project/Scenes/MainMap.unity
+    guid: 1481c095102096445b64f92ab3540e94
+  - enabled: 1
+    path: Assets/_Expirement/TestSpawn.unity
+    guid: d4c8953010a596e48946aac24c6768f2
   m_configObjects: {}
