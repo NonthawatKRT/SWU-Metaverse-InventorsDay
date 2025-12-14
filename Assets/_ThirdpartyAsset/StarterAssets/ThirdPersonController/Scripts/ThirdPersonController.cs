@@ -136,7 +136,7 @@ namespace StarterAssets
                     if (_mainCamera != null) Destroy(_mainCamera);
                     if (playerFollowCamera != null) Destroy(playerFollowCamera);
                     if (playerInput != null) playerInput.enabled = false;
-                    if (updater != null) updater.enabled = false;
+                    // if (updater != null) updater.enabled = false;
                 }
                 else if (isOwner)
                 {
