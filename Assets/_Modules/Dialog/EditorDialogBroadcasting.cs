@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-
+#if UNITY_EDITOR
 [CustomEditor(typeof(DialogBroadCasting))]
 public class EditorDialogBroadcasting : Editor
 {
@@ -202,3 +202,4 @@ public class EditorDialogBroadcasting : Editor
         }
     }
 }
+#endif
