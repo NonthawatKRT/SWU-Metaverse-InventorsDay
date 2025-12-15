@@ -32,13 +32,13 @@ namespace PurrLobby
             }
             else if (obj == ConnectionState.Disconnected)
             {
-                StartCoroutine(TypewriterEffect("Not connected"));
+                StartCoroutine(TypewriterEffect("Loading..."));
             }
         }
         
         private IEnumerator ShowConnectedAndHideLoading()
         {
-            yield return StartCoroutine(TypewriterEffect("Connected"));
+            yield return StartCoroutine(TypewriterEffect("Loaded!"));
             
             Invoke("disabbleLoadingScreen", 1f);
         }

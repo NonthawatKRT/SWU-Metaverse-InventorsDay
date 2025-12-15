@@ -21,6 +21,6 @@ EditorBuildSettings:
     path: Assets/_Project/Scenes/MainMap.unity
     guid: 1481c095102096445b64f92ab3540e94
   - enabled: 1
-    path: Assets/_Expirement/TestSpawn.unity
+    path: Assets/_Project/Scenes/TestSpawn.unity
     guid: d4c8953010a596e48946aac24c6768f2
   m_configObjects: {}
