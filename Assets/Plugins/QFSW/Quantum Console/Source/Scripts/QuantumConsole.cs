@@ -9,7 +9,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-// using StarterAssets;
+
 namespace QFSW.QC
 {
     /// <summary>
@@ -21,7 +21,6 @@ namespace QFSW.QC
         /// <summary>
         /// Singleton reference to the console. Only valid and set if the singleton option is enabled for the console.
         /// </summary>
-        // public ThirdPersonController _ThirdPersonController;
         public static QuantumConsole Instance { get; private set; }
 
 #pragma warning disable 0414, 0067, 0649
@@ -207,9 +206,6 @@ namespace QFSW.QC
                 if (_keyConfig.ShowConsoleKey.IsPressed() || _keyConfig.ToggleConsoleVisibilityKey.IsPressed())
                 {
                     Activate();
-                    // _ThirdPersonController.enabled = false;
-                    // Cursor.visible = true;
-                    // Cursor.lockState = CursorLockMode.None;
                 }
             }
             else
@@ -221,9 +217,6 @@ namespace QFSW.QC
                 if (_keyConfig.HideConsoleKey.IsPressed() || _keyConfig.ToggleConsoleVisibilityKey.IsPressed())
                 {
                     Deactivate();
-                    // _ThirdPersonController.enabled = true;
-                    // Cursor.visible = false;
-                    // Cursor.lockState = CursorLockMode.Locked;
                     return;
                 }
 
