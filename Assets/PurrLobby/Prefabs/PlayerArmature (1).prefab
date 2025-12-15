@@ -554,7 +554,7 @@ MonoBehaviour:
   BottomClamp: -30
   CameraAngleOverride: 0
   LockCameraPosition: 0
-  virtualCamera: {fileID: 0}
+  virtualCamera: {fileID: 4918442001817168967}
   ZoomSpeed: 2
   MinZoomDistance: 1.5
   MaxZoomDistance: 10
@@ -563,8 +563,9 @@ MonoBehaviour:
   updater: {fileID: 4829691050984108007}
   _mainCamera: {fileID: 5484380165191170117}
   playerFollowCamera: {fileID: 4918442001817169337}
-  QuantumConsoleObject: {fileID: 0}
+  QuantumConsoleObject: {fileID: 2038124877202034678}
   isConsoleOpen: 0
+  quantumConsole: {fileID: 9033682889934482918}
 --- !u!114 &2079816616993425098
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3698,6 +3699,24 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 4842281084352655017}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &2038124877202034678 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6880342696652530015, guid: f559bf9b9d52c4b4a8f7b73597383a97,
+    type: 3}
+  m_PrefabInstance: {fileID: 4842281084352655017}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &9033682889934482918 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4498298075625767759, guid: f559bf9b9d52c4b4a8f7b73597383a97,
+    type: 3}
+  m_PrefabInstance: {fileID: 4842281084352655017}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2038124877202034678}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d0e534416bbcea448f24633d520da24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &6412201482912129854
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3782,6 +3801,18 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 6412201482912129854}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &4918442001817168967 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2070925441746177913, guid: a1a802ecaf6775746bb2a929fb554ad8,
+    type: 3}
+  m_PrefabInstance: {fileID: 6412201482912129854}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4918442001817169337}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45e653bab7fb20e499bda25e1b646fea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &4918442001817169337 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 2070925441746177671, guid: a1a802ecaf6775746bb2a929fb554ad8,

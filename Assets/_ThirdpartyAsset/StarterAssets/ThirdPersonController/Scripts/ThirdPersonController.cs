@@ -147,6 +147,10 @@ namespace StarterAssets
                 {
                     playerInput.SwitchCurrentControlScheme("KeyboardMouse", Keyboard.current, Mouse.current);
                 }
+                if (quantumConsole = null)
+                {
+                    if (QuantumConsoleObject != null) Destroy(QuantumConsoleObject);
+                }
             }
         }
 
@@ -160,6 +164,7 @@ namespace StarterAssets
         public GameObject playerFollowCamera;
         public GameObject QuantumConsoleObject;
         public bool isConsoleOpen = false;
+        public QuantumConsole quantumConsole;
 
         private const float _threshold = 0.01f;
 
