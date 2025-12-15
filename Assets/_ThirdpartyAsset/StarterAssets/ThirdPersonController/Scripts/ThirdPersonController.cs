@@ -236,7 +236,7 @@ namespace StarterAssets
             
             _hasAnimator = TryGetComponent(out _animator);
 
-            HandleZoom();
+            // HandleZoom();
             JumpAndGravity();
             GroundedCheck();
             Move();
