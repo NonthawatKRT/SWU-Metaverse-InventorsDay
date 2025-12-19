@@ -400,6 +400,7 @@ GameObject:
   - component: {fileID: 6980163752669945373}
   - component: {fileID: 2992240561251120254}
   - component: {fileID: 4829691050984108007}
+  - component: {fileID: 3516417463822418984}
   m_Layer: 8
   m_Name: PlayerArmature (1)
   m_TagString: Player
@@ -786,6 +787,29 @@ MonoBehaviour:
   - {fileID: 9000000, guid: a3baf01f0c2c2a24fbf4fddf484aff45, type: 2}
   - {fileID: 9000000, guid: 588bc6557fa711a4ca50d78b2383654a, type: 2}
   animators: {fileID: 5224544629829688134}
+--- !u!136 &3516417463822418984
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1824682036335651958}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.25
+  m_Height: 2.5
+  m_Direction: 1
+  m_Center: {x: 0, y: 0.90412486, z: 0}
 --- !u!1 &2032576665251466355
 GameObject:
   m_ObjectHideFlags: 0
