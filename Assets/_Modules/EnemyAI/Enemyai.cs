@@ -31,10 +31,12 @@ public class Enemyai : MonoBehaviour
     public List<Transform> patrolPoints;
     public LayerMask playerLayer;
     public float searchRotateSpeed = 120f;
-
+    
+    [Header("Movement Settings")]
+    public float normalSpeed = 3.5f;
     public float susspeed = 2.0f;
     public float chasingspeed = 4.0f;
-    public float normalSpeed = 3.5f;
+
 
 
 
