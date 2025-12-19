@@ -2,6 +2,7 @@
 using PurrNet;
 using Cinemachine;
 using QFSW.QC;
+using TMPro;
 #if ENABLE_INPUT_SYSTEM 
 using UnityEngine.InputSystem;
 #endif
@@ -131,7 +132,13 @@ namespace StarterAssets
         {
             base.OnSpawned();
 
-            // enabled = isOwner;
+            // if (playerNameUI != null)
+            // {
+            //     // Replace with your actual way to get playerId and displayName
+            //     string playerId = this.ObjectId.ToString(); // or from your network/lobby system
+            //     string displayName = PlayerName; // or from LobbyUser, etc.
+            //     // playerNameUI.Init(playerId, displayName);
+            // }
 
             if (!isOwner)
             {
@@ -140,19 +147,52 @@ namespace StarterAssets
                 if (playerInput != null) playerInput.enabled = false;
                 // if (updater != null) updater.enabled = false;
                 if (QuantumConsoleObject != null) Destroy(QuantumConsoleObject);
+                
             }
             else if (isOwner)
             {
+                if (Playernameui != null)
+                {
+                    Playernameui.SetActive(false);
+                }
+
                 if (playerInput != null)
                 {
                     playerInput.SwitchCurrentControlScheme("KeyboardMouse", Keyboard.current, Mouse.current);
                 }
+
                 if (quantumConsole = null)
                 {
                     if (QuantumConsoleObject != null) Destroy(QuantumConsoleObject);
                 }
             }
         }
+
+        // [ServerRpc]
+        // private void SetPlayerNameServerRpc(string name)
+        // {
+        //     NetworkPlayerName = name;
+        //     UpdatePlayerNameObserversRpc(name);
+        // }
+
+        // [ObserversRpc]
+        // private void UpdatePlayerNameObserversRpc(string name)
+        // {
+        //     NetworkPlayerName = name;
+        //     UpdatePlayerNameUI();
+        // }
+        // private void UpdatePlayerNameUI()
+// {
+//     if (playerNameUI == null) return;
+
+//     playerNameUI.SetDisplayName(NetworkPlayerName);
+
+//     // Optional: hide your own name
+//     if (isOwner)
+//     {
+//         playerNameUI.gameObject.SetActive(false);
+//     }
+// }
 
 #if ENABLE_INPUT_SYSTEM 
         private PlayerInput _playerInput;
@@ -165,6 +205,8 @@ namespace StarterAssets
         public GameObject QuantumConsoleObject;
         public bool isConsoleOpen = false;
         public QuantumConsole quantumConsole;
+        public GameObject Playernameui;
+        // public PlayerNameUI playerNameUI; // Assign in inspector or via code
 
         private const float _threshold = 0.01f;
 
@@ -191,6 +233,13 @@ namespace StarterAssets
                 _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
             }
         }
+        // public void updateplayernametext()
+        // {
+        //     if (playernametext != null)
+        //     {
+        //         playernametext.text(this.ObjectId.ToString());
+        //     }
+        // }
 
         private void Start()
         {

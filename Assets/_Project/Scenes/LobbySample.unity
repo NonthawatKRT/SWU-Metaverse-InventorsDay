@@ -1748,7 +1748,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2072866401}
   m_HandleRect: {fileID: 2072866400}
   m_Direction: 2
-  m_Value: 1
+  m_Value: 0
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -1874,7 +1874,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2108945444}
   m_HandleRect: {fileID: 2108945443}
   m_Direction: 2
-  m_Value: 1
+  m_Value: 0
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -1930,6 +1930,7 @@ GameObject:
   - component: {fileID: 1097043115}
   - component: {fileID: 1097043114}
   - component: {fileID: 1097043116}
+  - component: {fileID: 1097043117}
   m_Layer: 0
   m_Name: LobbyManager
   m_TagString: Untagged
@@ -2139,6 +2140,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   lobbyManager: {fileID: 1097043115}
   nextScene: CharacterSelect
+--- !u!114 &1097043117
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1097043112}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9d2ba0db52f124181cb41ce3377cf2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  UserName: Player
 --- !u!1 &1101296062
 GameObject:
   m_ObjectHideFlags: 0
@@ -2498,7 +2512,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 37.15
+  m_fontSize: 37.2
   m_fontSizeBase: 60
   m_fontWeight: 400
   m_enableAutoSizing: 1

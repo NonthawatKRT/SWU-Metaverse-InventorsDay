@@ -432,6 +432,21 @@ namespace PurrLobby
             _currentProvider.SetLobbyStartedAsync();
         }
 
+        /// <summary>
+        /// Returns the local player's display name from the current lobby, or null if unavailable.
+        /// </summary>
+        public async Task<string> GetLocalPlayerDisplayNameAsync()
+        {
+            if (_currentProvider == null) return null;
+            if (_currentLobby.Members == null || !_currentLobby.IsValid) return null;
+
+            var localUserId = await _currentProvider.GetLocalUserIdAsync();
+            if (string.IsNullOrEmpty(localUserId)) return null;
+
+            var user = _currentLobby.Members.Find(x => x.Id == localUserId);
+            return user.DisplayName;
+        }
+
         [System.Serializable]
         public class CreateRoomArgs
         {
