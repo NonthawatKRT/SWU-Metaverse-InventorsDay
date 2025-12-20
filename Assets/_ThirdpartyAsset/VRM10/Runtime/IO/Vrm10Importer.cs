@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using UniGLTF;
+using UniGLTF.Extensions.VRMC_springBone_limit;
 using UniGLTF.Utils;
 using UnityEngine;
 
@@ -626,11 +628,46 @@ namespace UniVRM10
                             joint.m_gravityDir = gltfJoint.GravityDir != null ? Vector3InvertX(gltfJoint.GravityDir) : Vector3.down;
                             joint.m_gravityPower = gltfJoint.GravityPower.GetValueOrDefault(0.0f);
                             joint.m_stiffnessForce = gltfJoint.Stiffness.GetValueOrDefault(1.0f);
+
+                            if (UniGLTF.Extensions.VRMC_springBone_limit.GltfDeserializer.TryGet(gltfJoint.Extensions as glTFExtension,
+                                out var extensionSpringBoneLimit))
+                            {
+                                if (extensionSpringBoneLimit.Limit.Cone is UniGLTF.Extensions.VRMC_springBone_limit.ConeLimit cone)
+                                {
+                                    joint.m_anglelimitType = UniGLTF.SpringBoneJobs.AnglelimitTypes.Cone;
+                                    joint.m_limitSpaceOffset = QuaternionFromFloat4(cone.Rotation);
+                                    joint.m_pitch = cone.Angle.GetValueOrDefault();
+                                }
+                                else if (extensionSpringBoneLimit.Limit.Hinge is UniGLTF.Extensions.VRMC_springBone_limit.HingeLimit hinge)
+                                {
+                                    joint.m_anglelimitType = UniGLTF.SpringBoneJobs.AnglelimitTypes.Hinge;
+                                    joint.m_limitSpaceOffset = QuaternionFromFloat4(hinge.Rotation);
+                                    joint.m_pitch = hinge.Angle.GetValueOrDefault();
+                                }
+                                else if (extensionSpringBoneLimit.Limit.Spherical is UniGLTF.Extensions.VRMC_springBone_limit.SphericalLimit spherical)
+                                {
+                                    joint.m_anglelimitType = UniGLTF.SpringBoneJobs.AnglelimitTypes.Spherical;
+                                    joint.m_limitSpaceOffset = QuaternionFromFloat4(spherical.Rotation);
+                                    joint.m_pitch = spherical.Pitch.GetValueOrDefault();
+                                    joint.m_yaw = spherical.Yaw.GetValueOrDefault();
+                                }
+                            }
+
                             spring.Joints.Add(joint);
                         }
                     }
                 }
             }
+        }
+
+        private static Quaternion QuaternionFromFloat4(float[] xyzw)
+        {
+            var q = (xyzw != null && xyzw.Length == 4)
+                ? new Quaternion(xyzw[0], xyzw[1], xyzw[2], xyzw[3])
+                : Quaternion.identity
+                ;
+            // vrm-1.0 is x inverted            
+            return Axes.X.Create().InvertQuaternion(q);
         }
 
         static AxisMask ConstraintAxes(bool[] flags)

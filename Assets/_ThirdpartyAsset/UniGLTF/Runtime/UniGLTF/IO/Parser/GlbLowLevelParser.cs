@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Text.RegularExpressions;
 using UniJSON;
 
@@ -33,7 +32,7 @@ namespace UniGLTF
                 var jsonBytes = chunks[0].Bytes;
                 return ParseGltf(
                     _path,
-                    Encoding.UTF8.GetString(jsonBytes.Array, jsonBytes.Offset, jsonBytes.Count),
+                    new Utf8String(new ArraySegment<byte>(jsonBytes.Array, jsonBytes.Offset, jsonBytes.Count)),
                     chunks,
                     default,
                     new MigrationFlags()
@@ -73,16 +72,23 @@ namespace UniGLTF
 
         public static GltfData ParseGltf(string path, string json, IReadOnlyList<GlbChunk> chunks, IStorage storage, MigrationFlags migrationFlags)
         {
-            var GLTF = GltfDeserializer.Deserialize(json.ParseAsJson());
+            return ParseGltf(path, Utf8String.From(json), chunks, storage, migrationFlags);
+        }
+
+        internal static GltfData ParseGltf(string path, Utf8String json, IReadOnlyList<GlbChunk> chunks, IStorage storage, MigrationFlags migrationFlags)
+        {
+            var parsedJson = json.ParseAsJson();
+            var GLTF = GltfDeserializer.Deserialize(parsedJson);
             if (GLTF.asset.version != "2.0")
             {
                 throw new UniGLTFException("unknown gltf version {0}", GLTF.asset.version);
             }
 
             // Version Compatibility
-            RestoreOlderVersionValues(json, GLTF);
+            RestoreOlderVersionValues(parsedJson, GLTF);
 
             FixMeshNameUnique(GLTF);
+            FixBlendShapeNameUnique(GLTF);
             foreach (var image in GLTF.images)
             {
                 image.uri = PrepareUri(image.uri);
@@ -117,6 +123,61 @@ namespace UniGLTF
                         lower = uname;
                     }
                     used.Add(lower);
+                }
+            }
+        }
+
+        // https://github.com/vrm-c/UniVRM/issues/2619
+        private static void FixBlendShapeNameUnique(glTF GLTF)
+        {
+            foreach (var mesh in GLTF.meshes)
+            {
+                /// https://github.com/KhronosGroup/glTF/pull/1631/files
+                if (gltf_mesh_extras_targetNames.TryGet(mesh, out var targetNames))
+                {
+                    var used = new HashSet<string>();
+                    int rename = 0;
+                    for (int i = 0; i < targetNames.Count; ++i)
+                    {
+                        var target_name = targetNames[i];
+                        if (string.IsNullOrEmpty(target_name))
+                        {
+                            // no name
+                            targetNames[i] = $"__{i}__";
+                            UniGLTFLogger.Log($"rename blendshape: {mesh.name}[{i}]{target_name} => {targetNames[i]}");
+                            rename += 1;
+                        }
+                        else if (used.Contains(target_name))
+                        {
+                            // rename
+                            var uname = $"__{i}__{target_name}";
+                            targetNames[i] = uname;
+                            UniGLTFLogger.Log($"rename blendshape: {mesh.name}[{i}]{target_name} => {targetNames[i]}");
+                            rename += 1;
+                        }
+                        used.Add(targetNames[i]);
+                    }
+                    if (rename > 0)
+                    {
+
+                        // var extrans = new Dictionary<string, JsonNode>()
+                        // {
+                        //     {"targetNames", targetNames },
+                        var f = new JsonFormatter();
+                        f.BeginMap();
+                        f.Key("targetNames");
+                        {
+                            f.BeginList();
+                            foreach (var name in targetNames)
+                            {
+                                f.Value(name);
+                            }
+                            f.EndList();
+                        }
+                        f.EndMap();
+                        var json = f.ToString();
+                        mesh.extras = new UniGLTF.glTFExtensionImport(JsonParser.Parse(json));
+                    }
                 }
             }
         }
@@ -242,9 +303,8 @@ namespace UniGLTF
             }
         }
 
-        private static void RestoreOlderVersionValues(string Json, glTF GLTF)
+        private static void RestoreOlderVersionValues(JsonNode parsed, glTF GLTF)
         {
-            var parsed = UniJSON.JsonParser.Parse(Json);
             for (int i = 0; i < GLTF.images.Count; ++i)
             {
                 if (string.IsNullOrEmpty(GLTF.images[i].name))

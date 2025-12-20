@@ -140,6 +140,12 @@ namespace UniVRM10
             return new float[] { -v.x, v.y, v.z };
         }
 
+        static float[] ReverseX(Quaternion q)
+        {
+            q = UniGLTF.Axes.X.Create().InvertQuaternion(q);
+            return new float[] { q.x, q.y, q.z, q.w };
+        }
+
         ///
         /// 必要な容量を計算
         /// (sparseは考慮してないので大きめ)
@@ -444,6 +450,65 @@ namespace UniVRM10
                 GravityDir = ReverseX(y.m_gravityDir),
                 GravityPower = y.m_gravityPower,
             };
+
+            switch (y.m_anglelimitType)
+            {
+                case UniGLTF.SpringBoneJobs.AnglelimitTypes.Cone:
+                    {
+                        var limit = new UniGLTF.Extensions.VRMC_springBone_limit.VRMC_springBone_limit
+                        {
+                            Limit = new UniGLTF.Extensions.VRMC_springBone_limit.Limit
+                            {
+                                Cone = new UniGLTF.Extensions.VRMC_springBone_limit.ConeLimit
+                                {
+                                    Rotation = ReverseX(y.m_limitSpaceOffset),
+                                    Angle = y.m_pitch,
+                                }
+                            }
+                        };
+                        glTFExtension extensions = default;
+                        UniGLTF.Extensions.VRMC_springBone_limit.GltfSerializer.SerializeTo(ref extensions, limit);
+                        joint.Extensions = extensions;
+                        break;
+                    }
+                case UniGLTF.SpringBoneJobs.AnglelimitTypes.Hinge:
+                    {
+                        var limit = new UniGLTF.Extensions.VRMC_springBone_limit.VRMC_springBone_limit
+                        {
+                            Limit = new UniGLTF.Extensions.VRMC_springBone_limit.Limit
+                            {
+                                Hinge = new UniGLTF.Extensions.VRMC_springBone_limit.HingeLimit
+                                {
+                                    Rotation = ReverseX(y.m_limitSpaceOffset),
+                                    Angle = y.m_pitch,
+                                }
+                            }
+                        };
+                        glTFExtension extensions = default;
+                        UniGLTF.Extensions.VRMC_springBone_limit.GltfSerializer.SerializeTo(ref extensions, limit);
+                        joint.Extensions = extensions;
+                        break;
+                    }
+                case UniGLTF.SpringBoneJobs.AnglelimitTypes.Spherical:
+                    {
+                        var limit = new UniGLTF.Extensions.VRMC_springBone_limit.VRMC_springBone_limit
+                        {
+                            Limit = new UniGLTF.Extensions.VRMC_springBone_limit.Limit
+                            {
+                                Spherical = new UniGLTF.Extensions.VRMC_springBone_limit.SphericalLimit
+                                {
+                                    Rotation = ReverseX(y.m_limitSpaceOffset),
+                                    Pitch = y.m_pitch,
+                                    Yaw = y.m_yaw,
+                                }
+                            }
+                        };
+                        glTFExtension extensions = default;
+                        UniGLTF.Extensions.VRMC_springBone_limit.GltfSerializer.SerializeTo(ref extensions, limit);
+                        joint.Extensions = extensions;
+                        break;
+                    }
+            }
             return joint;
         }
 
