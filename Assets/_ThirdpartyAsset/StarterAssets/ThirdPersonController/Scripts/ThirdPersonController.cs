@@ -126,6 +126,8 @@ namespace StarterAssets
         private int _animIDMotionSpeed;
         public PlayerInput playerInput;
         public Updater updater;
+        public bool ispaused = false;
+        public PauseGame pauseGame;
 
 
         protected override void OnSpawned()
@@ -147,6 +149,7 @@ namespace StarterAssets
                 if (playerInput != null) playerInput.enabled = false;
                 // if (updater != null) updater.enabled = false;
                 if (QuantumConsoleObject != null) Destroy(QuantumConsoleObject);
+                if (pauseGame != null) pauseGame.enabled = false;
                 
             }
             else if (isOwner)
@@ -300,6 +303,7 @@ namespace StarterAssets
             GroundedCheck();
             Move();
             HandleToggleConsole();
+            HandlePause();
         }
 
         public void HandleToggleConsole()
@@ -320,6 +324,37 @@ namespace StarterAssets
                     // Cursor.lockState = CursorLockMode.Locked;
                     playerInput.enabled = true;
                 }
+            }
+        }
+
+        public void HandlePause()
+        {
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                togglepause();
+            }
+            if (ispaused)
+            {
+                Cursor.visible = true;
+                Cursor.lockState = CursorLockMode.None;
+            }
+            else
+            {
+                Cursor.visible = false;
+                Cursor.lockState = CursorLockMode.Locked;
+            }
+        }
+        public void togglepause()
+        {
+            if (ispaused)
+            {
+                ispaused = false;
+                playerInput.enabled = true;
+            }
+            else
+            {
+                ispaused = true;
+                playerInput.enabled = false;
             }
         }
 
