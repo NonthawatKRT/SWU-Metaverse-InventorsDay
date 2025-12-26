@@ -18,6 +18,10 @@ namespace PurrLobby
             }
             ShowViewInternal(defaultView);
         }
+        public void exitgame()
+        {
+            Application.Quit();
+        }
 
         public void ShowView<T>(bool hideOthers = true) where T : View
         {
