@@ -7,6 +7,9 @@ public class UpdateLobbyRequest : MonoBehaviour
 {
     void Start()
     {
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+        
         // Find all lobby-related components in DontDestroyOnLoad
         var lobbyManager = FindObjectOfType<LobbyManager>();
         var memberList = FindObjectOfType<LobbyMemberList>();

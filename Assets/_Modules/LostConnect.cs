@@ -44,8 +44,6 @@ public class LostConnect : MonoBehaviour
 
     private IEnumerator ExitLobbyRoutine()
     {
-        Cursor.visible = true;
-        Cursor.lockState = CursorLockMode.None;
         // Enable UI and camera
         if (lostconnectui != null)
             lostconnectui.SetActive(true);
