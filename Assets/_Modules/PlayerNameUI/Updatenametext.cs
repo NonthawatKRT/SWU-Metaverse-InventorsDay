@@ -1,48 +1,58 @@
 using UnityEngine;
 using TMPro;
+using PurrNet;
 
 public class Updatenametext : MonoBehaviour
 {
-	[SerializeField] private TMP_Text nameText;
-	[SerializeField] private PlayerIdentity playerIdentity;
+    [SerializeField] private TMP_Text nameText;
+    [SerializeField] private PlayerIdentity playerIdentity;
 
-	private void OnEnable()
-	{
-		if (nameText == null)
-			nameText = GetComponent<TMP_Text>();
-		
-		if (playerIdentity == null)
-			playerIdentity = GetComponentInParent<PlayerIdentity>();
+    private NetworkIdentity identity;
 
-		Refresh();
+    private void OnEnable()
+    {
+        if (nameText == null)
+            nameText = GetComponent<TMP_Text>();
 
-		if (playerIdentity != null)
-		{
-			playerIdentity.OnPlayerNameChanged += HandleNameChanged;
-		}
-	}
+        if (playerIdentity == null)
+            playerIdentity = GetComponentInParent<PlayerIdentity>();
 
-	private void OnDisable()
-	{
-		if (playerIdentity != null)
-		{
-			playerIdentity.OnPlayerNameChanged -= HandleNameChanged;
-		}
-	}
+        identity = GetComponentInParent<NetworkIdentity>();
 
-	private void HandleNameChanged(string newName)
-	{
-		if (nameText != null)
-		{
-			nameText.text = newName;
-		}
-	}
+        Refresh();
 
-	private void Refresh()
-	{
-		if (playerIdentity != null && nameText != null && !string.IsNullOrEmpty(playerIdentity.PlayerName))
-		{
-			nameText.text = playerIdentity.PlayerName;
-		}
-	}
+        if (playerIdentity != null)
+        {
+            playerIdentity.OnPlayerNameChanged += HandleNameChanged;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (playerIdentity != null)
+        {
+            playerIdentity.OnPlayerNameChanged -= HandleNameChanged;
+        }
+    }
+
+    private void HandleNameChanged(string newName)
+    {
+        Refresh();
+    }
+
+    private void Refresh()
+    {
+        if (playerIdentity == null || nameText == null)
+            return;
+
+        // 🔹 Hide name for local player
+        if (identity != null && identity.isOwner)
+        {
+            nameText.gameObject.SetActive(false);
+            return;
+        }
+
+        nameText.gameObject.SetActive(true);
+        nameText.text = playerIdentity.PlayerName;
+    }
 }

@@ -29,24 +29,32 @@ public class PlayerIdentity : NetworkBehaviour
             if (PlayerData.Instance != null &&
                 !string.IsNullOrEmpty(PlayerData.Instance.UserName))
             {
-                // Send name to server
                 SendNameToServer(PlayerData.Instance.UserName);
             }
         }
     }
 
-    // 🔹 Owner → Server
+    // Client → Server
     [ServerRpc]
     private void SendNameToServer(string name)
     {
-        // Server validates if needed
+        // ✅ Update host locally
+        PlayerName = name;
+
+        // ✅ Update all clients
         BroadcastName(name);
     }
 
-    // 🔹 Server → Everyone
+    // Server → Clients ONLY (not host)
     [ObserversRpc]
     private void BroadcastName(string name)
     {
         PlayerName = name;
+    }
+
+    public bool IsLocalPlayer()
+    {
+        var identity = GetComponent<NetworkIdentity>();
+        return identity != null && identity.isOwner;
     }
 }
