@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-
+#if UNITY_EDITOR
 [CustomEditor(typeof(QuizManager))]
 public class EditorQuizManager : Editor
 {
@@ -212,4 +212,4 @@ public class EditorQuizManager : Editor
         }
     }
 }
-
+#endif

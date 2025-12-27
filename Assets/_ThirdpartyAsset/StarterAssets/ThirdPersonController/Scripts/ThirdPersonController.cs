@@ -1,6 +1,8 @@
-﻿ using UnityEngine;
- using PurrNet;
+﻿using UnityEngine;
+using PurrNet;
 using Cinemachine;
+using QFSW.QC;
+using TMPro;
 #if ENABLE_INPUT_SYSTEM 
 using UnityEngine.InputSystem;
 #endif
@@ -18,6 +20,7 @@ namespace StarterAssets
     {
         [Header("Player")]
         [Tooltip("Move speed of the character in m/s")]
+
         public float MoveSpeed = 2.0f;
 
         [Tooltip("Sprint speed of the character in m/s")]
@@ -80,23 +83,23 @@ namespace StarterAssets
         [Header("Camera Zoom")]
         [Tooltip("Reference to the Cinemachine Virtual Camera for zoom control")]
         public CinemachineVirtualCamera virtualCamera;
-        
+
         [Tooltip("Speed of zoom when scrolling")]
         public float ZoomSpeed = 2.0f;
-        
+
         [Tooltip("Minimum zoom distance")]
         public float MinZoomDistance = 1.5f;
-        
+
         [Tooltip("Maximum zoom distance")]
         public float MaxZoomDistance = 10.0f;
-        
+
         [Tooltip("How smoothly the zoom transitions")]
         public float ZoomSmoothTime = 0.2f;
 
         // cinemachine
         private float _cinemachineTargetYaw;
         private float _cinemachineTargetPitch;
-        
+
         // zoom
         private float _currentZoomDistance;
         private float _targetZoomDistance;
@@ -123,29 +126,76 @@ namespace StarterAssets
         private int _animIDMotionSpeed;
         public PlayerInput playerInput;
         public Updater updater;
-        
+        public bool ispaused = false;
+        public PauseGame pauseGame;
 
-            protected override void OnSpawned()
+
+        protected override void OnSpawned()
+        {
+            base.OnSpawned();
+
+            // if (playerNameUI != null)
+            // {
+            //     // Replace with your actual way to get playerId and displayName
+            //     string playerId = this.ObjectId.ToString(); // or from your network/lobby system
+            //     string displayName = PlayerName; // or from LobbyUser, etc.
+            //     // playerNameUI.Init(playerId, displayName);
+            // }
+
+            if (!isOwner)
             {
-                base.OnSpawned();
-
-                // enabled = isOwner;
-
-                if (!isOwner)
+                if (_mainCamera != null) Destroy(_mainCamera);
+                if (playerFollowCamera != null) Destroy(playerFollowCamera);
+                if (playerInput != null) playerInput.enabled = false;
+                // if (updater != null) updater.enabled = false;
+                if (QuantumConsoleObject != null) Destroy(QuantumConsoleObject);
+                if (pauseGame != null) pauseGame.enabled = false;
+                
+            }
+            else if (isOwner)
+            {
+                if (Playernameui != null)
                 {
-                    if (_mainCamera != null) Destroy(_mainCamera);
-                    if (playerFollowCamera != null) Destroy(playerFollowCamera);
-                    if (playerInput != null) playerInput.enabled = false;
-                    // if (updater != null) updater.enabled = false;
+                    // Playernameui.SetActive(false);
                 }
-                else if (isOwner)
+
+                if (playerInput != null)
                 {
-                    if (playerInput != null)
-                    {
-                        playerInput.SwitchCurrentControlScheme("KeyboardMouse", Keyboard.current, Mouse.current);
-                    }
+                    playerInput.SwitchCurrentControlScheme("KeyboardMouse", Keyboard.current, Mouse.current);
+                }
+
+                if (quantumConsole = null)
+                {
+                    if (QuantumConsoleObject != null) Destroy(QuantumConsoleObject);
                 }
             }
+        }
+
+        // [ServerRpc]
+        // private void SetPlayerNameServerRpc(string name)
+        // {
+        //     NetworkPlayerName = name;
+        //     UpdatePlayerNameObserversRpc(name);
+        // }
+
+        // [ObserversRpc]
+        // private void UpdatePlayerNameObserversRpc(string name)
+        // {
+        //     NetworkPlayerName = name;
+        //     UpdatePlayerNameUI();
+        // }
+        // private void UpdatePlayerNameUI()
+// {
+//     if (playerNameUI == null) return;
+
+//     playerNameUI.SetDisplayName(NetworkPlayerName);
+
+//     // Optional: hide your own name
+//     if (isOwner)
+//     {
+//         playerNameUI.gameObject.SetActive(false);
+//     }
+// }
 
 #if ENABLE_INPUT_SYSTEM 
         private PlayerInput _playerInput;
@@ -155,6 +205,11 @@ namespace StarterAssets
         private StarterAssetsInputs _input;
         public GameObject _mainCamera;
         public GameObject playerFollowCamera;
+        public GameObject QuantumConsoleObject;
+        public bool isConsoleOpen = false;
+        public QuantumConsole quantumConsole;
+        public GameObject Playernameui;
+        // public PlayerNameUI playerNameUI; // Assign in inspector or via code
 
         private const float _threshold = 0.01f;
 
@@ -167,7 +222,7 @@ namespace StarterAssets
 #if ENABLE_INPUT_SYSTEM
                 return _playerInput.currentControlScheme == "KeyboardMouse";
 #else
-				return false;
+                return false;
 #endif
             }
         }
@@ -181,6 +236,13 @@ namespace StarterAssets
                 _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
             }
         }
+        // public void updateplayernametext()
+        // {
+        //     if (playernametext != null)
+        //     {
+        //         playernametext.text(this.ObjectId.ToString());
+        //     }
+        // }
 
         private void Start()
         {
@@ -192,29 +254,29 @@ namespace StarterAssets
             {
                 Debug.LogError("CinemachineCameraTarget is null on " + gameObject.name);
             }
-            
+
             _hasAnimator = TryGetComponent(out _animator);
             _controller = GetComponent<CharacterController>();
             _input = GetComponent<StarterAssetsInputs>();
-            
+
             if (_input == null)
             {
                 Debug.LogError("StarterAssetsInputs component not found on " + gameObject.name);
             }
-            
+
             if (_controller == null)
             {
                 Debug.LogError("CharacterController component not found on " + gameObject.name);
             }
-            
-#if ENABLE_INPUT_SYSTEM 
+
+#if ENABLE_INPUT_SYSTEM
             _playerInput = GetComponent<PlayerInput>();
             if (_playerInput == null)
             {
                 Debug.LogError("PlayerInput component not found on " + gameObject.name);
             }
 #else
-			Debug.LogError( "Starter Assets package is missing dependencies. Please use Tools/Starter Assets/Reinstall Dependencies to fix it");
+            Debug.LogError("Starter Assets package is missing dependencies. Please use Tools/Starter Assets/Reinstall Dependencies to fix it");
 #endif
 
             // Initialize zoom
@@ -233,13 +295,67 @@ namespace StarterAssets
         private void Update()
         {
             if (!isOwner) return;
-            
+
             _hasAnimator = TryGetComponent(out _animator);
 
-            HandleZoom();
+            // HandleZoom();
             JumpAndGravity();
             GroundedCheck();
             Move();
+            HandleToggleConsole();
+            HandlePause();
+        }
+
+        public void HandleToggleConsole()
+        {
+            if (Input.GetKeyDown(KeyCode.F1))
+            {
+                if (!isConsoleOpen)
+                {
+                    isConsoleOpen = true;
+                    // Cursor.visible = true;
+                    // Cursor.lockState = CursorLockMode.None;
+                    playerInput.enabled = false;
+                }
+                else
+                {
+                    isConsoleOpen = false;
+                    // Cursor.visible = false;
+                    // Cursor.lockState = CursorLockMode.Locked;
+                    playerInput.enabled = true;
+                }
+            }
+        }
+
+        public void HandlePause()
+        {
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                togglepause();
+            }
+            if (ispaused)
+            {
+                Cursor.visible = true;
+                Cursor.lockState = CursorLockMode.None;
+            }
+            else
+            {
+                Cursor.visible = false;
+                Cursor.lockState = CursorLockMode.Locked;
+            }
+        }
+        public void togglepause()
+        {
+            if (ispaused)
+            {
+                ispaused = false;
+                playerInput.enabled = true;
+            }
+            else
+            {
+                ispaused = true;
+                playerInput.enabled = false;
+            }
         }
 
         private void LateUpdate()
@@ -275,7 +391,7 @@ namespace StarterAssets
         private void CameraRotation()
         {
             if (_input == null || CinemachineCameraTarget == null) return;
-            
+
             // if there is an input and camera position is not fixed
             if (_input.look.sqrMagnitude >= _threshold && !LockCameraPosition)
             {
@@ -298,7 +414,7 @@ namespace StarterAssets
         private void Move()
         {
             if (_input == null || _controller == null) return;
-            
+
             // set target speed based on move speed, sprint speed and if sprint is pressed
             float targetSpeed = _input.sprint ? SprintSpeed : MoveSpeed;
 
@@ -449,13 +565,13 @@ namespace StarterAssets
 
             // Get the framing transposer component
             _framingTransposer = virtualCamera.GetCinemachineComponent<CinemachineFramingTransposer>();
-            
+
             if (_framingTransposer != null)
             {
                 // Initialize zoom distances
                 _currentZoomDistance = _framingTransposer.m_CameraDistance;
                 _targetZoomDistance = _currentZoomDistance;
-                
+
                 // Ensure the current distance is within bounds
                 _targetZoomDistance = Mathf.Clamp(_targetZoomDistance, MinZoomDistance, MaxZoomDistance);
                 _currentZoomDistance = _targetZoomDistance;
@@ -468,7 +584,7 @@ namespace StarterAssets
 
         private void HandleZoom()
         {
-            if (_framingTransposer == null || LockCameraPosition) 
+            if (_framingTransposer == null || LockCameraPosition)
             {
                 if (_framingTransposer == null)
                     Debug.LogWarning("Framing transposer is null - zoom won't work");
@@ -498,7 +614,7 @@ namespace StarterAssets
             }
 
             // Smoothly interpolate to target zoom distance
-            _currentZoomDistance = Mathf.SmoothDamp(_currentZoomDistance, _targetZoomDistance, 
+            _currentZoomDistance = Mathf.SmoothDamp(_currentZoomDistance, _targetZoomDistance,
                 ref _zoomVelocity, ZoomSmoothTime);
 
             // Apply the zoom to the virtual camera
@@ -545,5 +661,67 @@ namespace StarterAssets
                 AudioSource.PlayClipAtPoint(LandingAudioClip, transform.TransformPoint(_controller.center), FootstepAudioVolume);
             }
         }
+
+
+        #region Quantum Console Commands
+
+        /// <summary>
+        /// Sets the move speed of the character.
+        /// Usage: movespeed 5
+        /// </summary>
+        [QFSW.QC.Command("movespeed", "Sets the move speed of the character.")]
+        public void SetMoveSpeed(float value) => MoveSpeed = value;
+
+        /// <summary>
+        /// Gets the current move speed of the character.
+        /// Usage: getmovespeed
+        /// </summary>
+        [QFSW.QC.Command("getmovespeed", "Gets the current move speed of the character.")]
+        public float GetMoveSpeed() => MoveSpeed;
+
+        /// <summary>
+        /// Sets the sprint speed of the character.
+        /// Usage: sprintspeed 10
+        /// </summary>
+        [QFSW.QC.Command("sprintspeed", "Sets the sprint speed of the character.")]
+        public void SetSprintSpeed(float value) => SprintSpeed = value;
+
+        /// <summary>
+        /// Gets the current sprint speed of the character.
+        /// Usage: getsprintspeed
+        /// </summary>
+        [QFSW.QC.Command("getsprintspeed", "Gets the current sprint speed of the character.")]
+        public float GetSprintSpeed() => SprintSpeed;
+
+        /// <summary>
+        /// Sets the jump height of the character.
+        /// Usage: jumpheight 2
+        /// </summary>
+        [QFSW.QC.Command("jumpheight", "Sets the jump height of the character.")]
+        public void SetJumpHeight(float value) => JumpHeight = value;
+
+        /// <summary>
+        /// Gets the current jump height of the character.
+        /// Usage: getjumpheight
+        /// </summary>
+        [QFSW.QC.Command("getjumpheight", "Gets the current jump height of the character.")]
+        public float GetJumpHeight() => JumpHeight;
+
+        /// <summary>
+        /// Sets the gravity of the character.
+        /// Usage: gravity -20
+        /// </summary>
+        [QFSW.QC.Command("gravity", "Sets the gravity of the character.")]
+        public void SetGravity(float value) => Gravity = value;
+
+        /// <summary>
+        /// Gets the current gravity of the character.
+        /// Usage: getgravity
+        /// </summary>
+        [QFSW.QC.Command("getgravity", "Gets the current gravity of the character.")]
+        public float GetGravity() => Gravity;
+
+        #endregion
     }
+
 }
