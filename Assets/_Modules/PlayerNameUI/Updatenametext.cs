@@ -1,44 +1,58 @@
 using UnityEngine;
 using TMPro;
+using PurrNet;
 
 public class Updatenametext : MonoBehaviour
 {
-	[SerializeField] private TMP_Text nameText;
+    [SerializeField] private TMP_Text nameText;
+    [SerializeField] private PlayerIdentity playerIdentity;
 
-	private void OnEnable()
-	{
-		if (nameText == null)
-			nameText = GetComponent<TMP_Text>();
+    private NetworkIdentity identity;
 
-		Refresh();
+    private void OnEnable()
+    {
+        if (nameText == null)
+            nameText = GetComponent<TMP_Text>();
 
-		if (PlayerData.Instance != null)
-		{
-			PlayerData.Instance.OnNameChanged += HandleNameChanged;
-		}
-	}
+        if (playerIdentity == null)
+            playerIdentity = GetComponentInParent<PlayerIdentity>();
 
-	private void OnDisable()
-	{
-		if (PlayerData.Instance != null)
-		{
-			PlayerData.Instance.OnNameChanged -= HandleNameChanged;
-		}
-	}
+        identity = GetComponentInParent<NetworkIdentity>();
 
-	private void HandleNameChanged(string newName)
-	{
-		if (nameText != null)
-		{
-			nameText.text = newName;
-		}
-	}
+        Refresh();
 
-	private void Refresh()
-	{
-		if (PlayerData.Instance != null && nameText != null && !string.IsNullOrEmpty(PlayerData.Instance.UserName))
-		{
-			nameText.text = PlayerData.Instance.UserName;
-		}
-	}
+        if (playerIdentity != null)
+        {
+            playerIdentity.OnPlayerNameChanged += HandleNameChanged;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (playerIdentity != null)
+        {
+            playerIdentity.OnPlayerNameChanged -= HandleNameChanged;
+        }
+    }
+
+    private void HandleNameChanged(string newName)
+    {
+        Refresh();
+    }
+
+    private void Refresh()
+    {
+        if (playerIdentity == null || nameText == null)
+            return;
+
+        // 🔹 Hide name for local player
+        if (identity != null && identity.isOwner)
+        {
+            nameText.gameObject.SetActive(false);
+            return;
+        }
+
+        nameText.gameObject.SetActive(true);
+        nameText.text = playerIdentity.PlayerName;
+    }
 }

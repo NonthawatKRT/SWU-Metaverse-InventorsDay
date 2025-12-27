@@ -12,11 +12,49 @@ namespace PurrLobby
 
         private void Start()
         {
+            EnsureViewsAssigned();
+        }
+
+        public void EnsureViewsAssigned()
+        {
+            // Clear and repopulate allViews by finding GameObjects by name
+            allViews = new List<View>();
+            
+            // Find views by their GameObject names
+            string[] viewNames = { "MainScreen", "LobbyScreen", "BrowseScreen", "CreatingRoomOverlay", "LoadingRoomOverlay" };
+            
+            foreach (var viewName in viewNames)
+            {
+                GameObject viewObj = GameObject.Find(viewName);
+                if (viewObj != null)
+                {
+                    View view = viewObj.GetComponent<View>();
+                    if (view != null)
+                    {
+                        allViews.Add(view);
+                    }
+                }
+            }
+            
+            // If still no views found, fallback to FindObjectsOfType
+            if (allViews.Count == 0)
+            {
+                allViews = new List<View>(FindObjectsOfType<View>(true));
+            }
+
+            // Auto-assign defaultView if not set in Inspector
+            if (defaultView == null && allViews.Count > 0)
+            {
+                defaultView = allViews[0];
+            }
+
             foreach (var view in allViews)
             {
-                HideViewInternal(view);
+                if (view != null)
+                    HideViewInternal(view);
             }
-            ShowViewInternal(defaultView);
+            if (defaultView != null)
+                ShowViewInternal(defaultView);
         }
         public void exitgame()
         {
@@ -52,6 +90,8 @@ namespace PurrLobby
 
         private void ShowViewInternal(View view)
         {
+            if (!view || !view.canvasGroup) return;
+            
             view.canvasGroup.alpha = 1;
             view.canvasGroup.interactable = true;
             view.canvasGroup.blocksRaycasts = true;
