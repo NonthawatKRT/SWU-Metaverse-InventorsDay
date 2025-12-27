@@ -8,7 +8,7 @@ public class PlayerIdentity : NetworkBehaviour
     public string PlayerName
     {
         get => playerName;
-        set
+        private set
         {
             if (playerName != value)
             {
@@ -29,8 +29,24 @@ public class PlayerIdentity : NetworkBehaviour
             if (PlayerData.Instance != null &&
                 !string.IsNullOrEmpty(PlayerData.Instance.UserName))
             {
-                PlayerName = PlayerData.Instance.UserName;
+                // Send name to server
+                SendNameToServer(PlayerData.Instance.UserName);
             }
         }
+    }
+
+    // 🔹 Owner → Server
+    [ServerRpc]
+    private void SendNameToServer(string name)
+    {
+        // Server validates if needed
+        BroadcastName(name);
+    }
+
+    // 🔹 Server → Everyone
+    [ObserversRpc]
+    private void BroadcastName(string name)
+    {
+        PlayerName = name;
     }
 }
