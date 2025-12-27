@@ -1690,6 +1690,7 @@ GameObject:
   - component: {fileID: 2542344215188781294}
   - component: {fileID: 6433438197255930426}
   - component: {fileID: 5182044649137429099}
+  - component: {fileID: 6276485435903755411}
   m_Layer: 8
   m_Name: PlayerUI
   m_TagString: Untagged
@@ -1805,6 +1806,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   nameText: {fileID: 615728445480880352}
+  playerIdentity: {fileID: 6276485435903755411}
+--- !u!114 &6276485435903755411
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5166033734790270875}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78cdd63d74b562b4ab12208a7a027d56, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerName: Player
 --- !u!1 &5310325648007370543
 GameObject:
   m_ObjectHideFlags: 0
@@ -3671,12 +3686,12 @@ PrefabInstance:
     - target: {fileID: 3105636770120341928, guid: f559bf9b9d52c4b4a8f7b73597383a97,
         type: 3}
       propertyPath: m_Size
-      value: 0.9694398
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3105636770120341928, guid: f559bf9b9d52c4b4a8f7b73597383a97,
         type: 3}
       propertyPath: m_Value
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3309200973385339196, guid: f559bf9b9d52c4b4a8f7b73597383a97,
         type: 3}
@@ -3741,7 +3756,7 @@ PrefabInstance:
     - target: {fileID: 3509634737535169713, guid: f559bf9b9d52c4b4a8f7b73597383a97,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -0.000030517578
+      value: -0.000061035156
       objectReference: {fileID: 0}
     - target: {fileID: 4530511501341822276, guid: f559bf9b9d52c4b4a8f7b73597383a97,
         type: 3}

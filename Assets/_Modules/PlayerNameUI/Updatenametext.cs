@@ -4,25 +4,29 @@ using TMPro;
 public class Updatenametext : MonoBehaviour
 {
 	[SerializeField] private TMP_Text nameText;
+	[SerializeField] private PlayerIdentity playerIdentity;
 
 	private void OnEnable()
 	{
 		if (nameText == null)
 			nameText = GetComponent<TMP_Text>();
+		
+		if (playerIdentity == null)
+			playerIdentity = GetComponentInParent<PlayerIdentity>();
 
 		Refresh();
 
-		if (PlayerData.Instance != null)
+		if (playerIdentity != null)
 		{
-			PlayerData.Instance.OnNameChanged += HandleNameChanged;
+			playerIdentity.OnPlayerNameChanged += HandleNameChanged;
 		}
 	}
 
 	private void OnDisable()
 	{
-		if (PlayerData.Instance != null)
+		if (playerIdentity != null)
 		{
-			PlayerData.Instance.OnNameChanged -= HandleNameChanged;
+			playerIdentity.OnPlayerNameChanged -= HandleNameChanged;
 		}
 	}
 
@@ -36,9 +40,9 @@ public class Updatenametext : MonoBehaviour
 
 	private void Refresh()
 	{
-		if (PlayerData.Instance != null && nameText != null && !string.IsNullOrEmpty(PlayerData.Instance.UserName))
+		if (playerIdentity != null && nameText != null && !string.IsNullOrEmpty(playerIdentity.PlayerName))
 		{
-			nameText.text = PlayerData.Instance.UserName;
+			nameText.text = playerIdentity.PlayerName;
 		}
 	}
 }
