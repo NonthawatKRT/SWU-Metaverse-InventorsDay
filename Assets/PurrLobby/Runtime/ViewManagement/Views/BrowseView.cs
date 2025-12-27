@@ -10,6 +10,21 @@ namespace PurrLobby
         private bool _isActive;
         private float _lastSearchTime;
         
+        protected override void Awake()
+        {
+            base.Awake();
+            
+            if (lobbyManager == null)
+            {
+                lobbyManager = FindObjectOfType<LobbyManager>();
+            }
+            
+            if (lobbyList == null)
+            {
+                lobbyList = FindObjectOfType<LobbyList>();
+            }
+        }
+        
         public override void OnShow()
         {
             lobbyManager.SearchLobbies();

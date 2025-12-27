@@ -12,6 +12,7 @@ public class UpdateLobbyRequest : MonoBehaviour
         var memberList = FindObjectOfType<LobbyMemberList>();
         var lobbyList = FindObjectOfType<LobbyList>();
         var viewManager = FindObjectOfType<ViewManager>();
+        var eventBinder = FindObjectOfType<LobbyEventBinder>();
         
         // Force reassignment of content references
         if (memberList != null)
@@ -29,5 +30,13 @@ public class UpdateLobbyRequest : MonoBehaviour
         {
             viewManager.EnsureViewsAssigned();
         }
+        
+        // Rewire all event listeners
+        if (eventBinder != null)
+        {
+            eventBinder.RewireEvents();
+        }
+        
+        PurrNet.Logging.PurrLogger.Log("[UpdateLobbyRequest] Scene objects reassigned and events rewired");
     }
 }
