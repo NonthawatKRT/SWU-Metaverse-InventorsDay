@@ -1,13 +1,14 @@
 using UnityEngine;
+using PurrNet;
 
-public class PlayerIdentity : MonoBehaviour
+public class PlayerIdentity : NetworkBehaviour
 {
     [SerializeField] private string playerName;
-    
-    public string PlayerName 
-    { 
+
+    public string PlayerName
+    {
         get => playerName;
-        set 
+        set
         {
             if (playerName != value)
             {
@@ -16,26 +17,20 @@ public class PlayerIdentity : MonoBehaviour
             }
         }
     }
-    
+
     public event System.Action<string> OnPlayerNameChanged;
-    
-    private void Awake()
+
+    private void Start()
     {
-        // If this is the local player, set the name from PlayerData
-        if (IsLocalPlayer())
+        var identity = GetComponent<NetworkIdentity>();
+
+        if (identity != null && identity.isOwner)
         {
-            if (PlayerData.Instance != null && !string.IsNullOrEmpty(PlayerData.Instance.UserName))
+            if (PlayerData.Instance != null &&
+                !string.IsNullOrEmpty(PlayerData.Instance.UserName))
             {
                 PlayerName = PlayerData.Instance.UserName;
             }
         }
-    }
-    
-    private bool IsLocalPlayer()
-    {
-        // Check if this is the local player by checking for ownership or other local player markers
-        // This will depend on your networking setup - adjust as needed
-        var networkIdentity = GetComponent<PurrNet.NetworkIdentity>();
-        return networkIdentity != null && networkIdentity.isOwner;
     }
 }

@@ -156,7 +156,7 @@ namespace StarterAssets
             {
                 if (Playernameui != null)
                 {
-                    Playernameui.SetActive(false);
+                    // Playernameui.SetActive(false);
                 }
 
                 if (playerInput != null)
