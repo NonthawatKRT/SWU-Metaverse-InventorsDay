@@ -10,25 +10,32 @@ namespace PurrLobby
         private bool _isActive;
         private float _lastSearchTime;
         
-        protected override void Awake()
+        public void RebindSceneObjects()
         {
-            base.Awake();
-            
             if (lobbyManager == null)
             {
                 lobbyManager = FindObjectOfType<LobbyManager>();
             }
             
-            if (lobbyList == null)
+            // Find LobbyList by GameObject name in scene
+            GameObject lobbyListObj = GameObject.Find("LobbyList");
+            if (lobbyListObj != null)
             {
-                lobbyList = FindObjectOfType<LobbyList>();
+                lobbyList = lobbyListObj.GetComponent<LobbyList>();
             }
+            
+            PurrNet.Logging.PurrLogger.Log("[BrowseView] Rebinding complete - LobbyManager: " + (lobbyManager != null) + ", LobbyList: " + (lobbyList != null));
         }
         
         public override void OnShow()
         {
-            lobbyManager.SearchLobbies();
-            _lastSearchTime = Time.time;
+            RebindSceneObjects();
+            
+            if (lobbyManager != null)
+            {
+                lobbyManager.SearchLobbies();
+                _lastSearchTime = Time.time;
+            }
             _isActive = true;
         }
 
