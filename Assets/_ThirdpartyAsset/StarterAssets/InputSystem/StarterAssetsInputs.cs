@@ -12,12 +12,7 @@ namespace StarterAssets
 		public Vector2 look;
 		public bool jump;
 		public bool sprint;
-
-		[Header("Movement Settings")]
-		public bool analogMovement;
-
-		[Header("Mouse Cursor Settings")]
-		public bool cursorLocked = true;
+	public Vector2 scroll;	public float zoomInput;		public bool cursorLocked = true;
 		public bool cursorInputForLook = true;
 
 #if ENABLE_INPUT_SYSTEM
@@ -43,6 +38,21 @@ namespace StarterAssets
 		{
 			SprintInput(value.isPressed);
 		}
+
+		public void OnScroll(InputValue value)
+		{
+			ScrollInput(value.Get<Vector2>());
+		}
+
+		public void OnZoomIn(InputValue value)
+		{
+			ZoomInput(1f);
+		}
+
+		public void OnZoomOut(InputValue value)
+		{
+			ZoomInput(-1f);
+		}
 #endif
 
 
@@ -66,12 +76,22 @@ namespace StarterAssets
 			sprint = newSprintState;
 		}
 
-		private void OnApplicationFocus(bool hasFocus)
-		{
-			SetCursorState(cursorLocked);
-		}
+	public void ScrollInput(Vector2 newScrollValue)
+	{
+		scroll = newScrollValue;
+	}
 
-		private void SetCursorState(bool newState)
+	public void ZoomInput(float newZoomValue)
+	{
+		zoomInput = newZoomValue;
+	}
+
+	private void OnApplicationFocus(bool hasFocus)
+	{
+		SetCursorState(cursorLocked);
+	}
+
+	private void SetCursorState(bool newState)
 		{
 			Cursor.lockState = newState ? CursorLockMode.Locked : CursorLockMode.None;
 		}
