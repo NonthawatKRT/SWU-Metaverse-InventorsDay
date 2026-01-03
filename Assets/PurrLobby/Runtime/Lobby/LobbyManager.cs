@@ -136,8 +136,6 @@ namespace PurrLobby
             _currentProvider.OnLobbyLeft += () => InvokeDelayed(() =>
             {
                 _currentLobby = default;
-                IsStarting = false; // Reset flag when leaving lobby
-                PurrLogger.Log("[Lobby] Left lobby - resetting IsStarting flag");
                 OnRoomLeft?.Invoke();
             });
             
@@ -147,22 +145,10 @@ namespace PurrLobby
 
                 _lastKnownState = room;
                 _currentLobby = room;
-                
-                // Debug: Log player ready states
-                PurrLogger.Log($"[Lobby Update] Total players: {room.Members.Count}");
-                foreach (var member in room.Members)
-                {
-                    PurrLogger.Log($"[Lobby] Player '{member.DisplayName}' (ID: {member.Id}) - Ready: {member.IsReady}");
-                }
-                
-                int readyCount = room.Members.FindAll(x => x.IsReady).Count;
-                PurrLogger.Log($"[Lobby] Ready: {readyCount}/{room.Members.Count}");
-                
                 OnRoomUpdated?.Invoke(room);
 
                 if (!IsStarting && room.Members.TrueForAll(x => x.IsReady))
                 {
-                    PurrLogger.Log("[Lobby] All players are ready! Starting...");
                     IsStarting = true; //Prevent calling ready again if lobby is updated after all ready
                     CallOnAllReady();
                 }
@@ -175,12 +161,7 @@ namespace PurrLobby
             {
                 if (room.IsValid)
                 {
-                    InvokeDelayed(() => 
-                    {
-                        IsStarting = false; // Reset flag when joining a new room
-                        PurrLogger.Log($"[Lobby] Player joined! Room ID: {room.LobbyId}, Players: {room.Members.Count}");
-                        OnRoomJoined?.Invoke(room);
-                    });
+                    InvokeDelayed(() => OnRoomJoined?.Invoke(room));
                 }
             };
         }
@@ -405,7 +386,6 @@ namespace PurrLobby
             await WaitForAllTasksAsync();
             if(_currentLobby.IsValid && _currentLobby.Members.TrueForAll(x => x.IsReady))
             {
-                PurrLogger.Log("[Lobby] Calling OnAllReady - All players confirmed ready!");
                 await _currentProvider.SetAllReadyAsync();
 
                 OnAllReady?.Invoke();
@@ -450,21 +430,6 @@ namespace PurrLobby
         public void SetLobbyStarted()
         {
             _currentProvider.SetLobbyStartedAsync();
-        }
-
-        /// <summary>
-        /// Returns the local player's display name from the current lobby, or null if unavailable.
-        /// </summary>
-        public async Task<string> GetLocalPlayerDisplayNameAsync()
-        {
-            if (_currentProvider == null) return null;
-            if (_currentLobby.Members == null || !_currentLobby.IsValid) return null;
-
-            var localUserId = await _currentProvider.GetLocalUserIdAsync();
-            if (string.IsNullOrEmpty(localUserId)) return null;
-
-            var user = _currentLobby.Members.Find(x => x.Id == localUserId);
-            return user.DisplayName;
         }
 
         [System.Serializable]

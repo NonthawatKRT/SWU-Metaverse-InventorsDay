@@ -11,8 +11,6 @@ namespace PurrLobby
     {
         [SerializeField] private NetworkManager networkManager;
         [SerializeField] private TMP_Text connectedText;
-        [SerializeField] private GameObject loadingCanvas;
-        [SerializeField] private GameObject loadingCamera;
 
         private void Awake()
         {
@@ -27,28 +25,9 @@ namespace PurrLobby
         private void OnConnectionState(ConnectionState obj)
         {
             if (obj == ConnectionState.Connected)
-            {
-                StartCoroutine(ShowConnectedAndHideLoading());
-            }
+                StartCoroutine(TypewriterEffect("Connected"));
             else if (obj == ConnectionState.Disconnected)
-            {
-                StartCoroutine(TypewriterEffect("Loading..."));
-            }
-        }
-        
-        private IEnumerator ShowConnectedAndHideLoading()
-        {
-            yield return StartCoroutine(TypewriterEffect("Loaded"));
-            
-            Invoke("disabbleLoadingScreen", 1f);
-        }
-
-        private void disabbleLoadingScreen()
-        {
-            if (loadingCanvas != null)
-                loadingCanvas.SetActive(false);
-            if (loadingCamera != null)
-                loadingCamera.SetActive(false);
+                StartCoroutine(TypewriterEffect("Not connected"));
         }
 
         private WaitForSeconds _wait = new(0.1f);
