@@ -6,7 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 0
-    path: Assets/_Project/Scenes/SWU_5-9.unity
+    path: Assets/_Project/Scenes/SWU-Hack-Version.unity
     guid: 99c9720ab356a0642a771bea13969a05
   - enabled: 0
     path: Assets/_Project/Scenes/NetworkedScene.unity
