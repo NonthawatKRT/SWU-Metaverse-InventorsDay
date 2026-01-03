@@ -42,8 +42,8 @@ public class PlayerController : NetworkBehaviour
 
     private void Start()
     {
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
         characterController = GetComponent<CharacterController>();
 
         if (playerCamera == null)
@@ -53,70 +53,70 @@ public class PlayerController : NetworkBehaviour
         }
     }
 
-//     private void Update()
-//     {
-//         HandleMovement();
-//         HandleRotation();
-//     }
+    private void Update()
+    {
+        HandleMovement();
+        HandleRotation();
+    }
 
-//     private void HandleMovement()
-//     {
-//         bool isGrounded = IsGrounded();
-//         if (isGrounded && velocity.y < 0)
-//         {
-//             velocity.y = -2f;
-//         }
+    private void HandleMovement()
+    {
+        bool isGrounded = IsGrounded();
+        if (isGrounded && velocity.y < 0)
+        {
+            velocity.y = -2f;
+        }
 
-//         float horizontal = Input.GetAxisRaw("Horizontal");
-//         float vertical = Input.GetAxisRaw("Vertical");
+        float horizontal = Input.GetAxisRaw("Horizontal");
+        float vertical = Input.GetAxisRaw("Vertical");
 
-//         Vector3 moveDirection = transform.right * horizontal + transform.forward * vertical;
-//         moveDirection = Vector3.ClampMagnitude(moveDirection, 1f);
+        Vector3 moveDirection = transform.right * horizontal + transform.forward * vertical;
+        moveDirection = Vector3.ClampMagnitude(moveDirection, 1f);
 
-//         float currentSpeed = Input.GetKey(KeyCode.LeftShift) ? sprintSpeed : moveSpeed;
-//         characterController.Move(moveDirection * currentSpeed * Time.deltaTime);
+        float currentSpeed = Input.GetKey(KeyCode.LeftShift) ? sprintSpeed : moveSpeed;
+        characterController.Move(moveDirection * currentSpeed * Time.deltaTime);
 
-//         // Jump with multiple input options
-//         if ((Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Space)) && isGrounded)
-//         {
-//             // Better jump calculation using jumpHeight instead of jumpForce
-//             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
-//         }
+        // Jump with multiple input options
+        if ((Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Space)) && isGrounded)
+        {
+            // Better jump calculation using jumpHeight instead of jumpForce
+            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+        }
 
-//         velocity.y += gravity * Time.deltaTime;
-//         characterController.Move(velocity * Time.deltaTime);
-//     }
+        velocity.y += gravity * Time.deltaTime;
+        characterController.Move(velocity * Time.deltaTime);
+    }
 
-//     private void HandleRotation()
-//     {
-//         float mouseX = Input.GetAxis("Mouse X") * lookSensitivity;
-//         float mouseY = Input.GetAxis("Mouse Y") * lookSensitivity;
+    private void HandleRotation()
+    {
+        float mouseX = Input.GetAxis("Mouse X") * lookSensitivity;
+        float mouseY = Input.GetAxis("Mouse Y") * lookSensitivity;
 
-//         verticalRotation -= mouseY;
-//         verticalRotation = Mathf.Clamp(verticalRotation, -maxLookAngle, maxLookAngle);
-//         playerCamera.transform.localRotation = Quaternion.Euler(verticalRotation, 0f, 0f);
+        verticalRotation -= mouseY;
+        verticalRotation = Mathf.Clamp(verticalRotation, -maxLookAngle, maxLookAngle);
+        playerCamera.transform.localRotation = Quaternion.Euler(verticalRotation, 0f, 0f);
 
-//         transform.Rotate(Vector3.up * mouseX);
-//     }
+        transform.Rotate(Vector3.up * mouseX);
+    }
 
-//     private bool IsGrounded()
-//     {
-//         // Use CharacterController's built-in ground detection as primary method
-//         if (characterController != null && characterController.isGrounded)
-//             return true;
+    private bool IsGrounded()
+    {
+        // Use CharacterController's built-in ground detection as primary method
+        if (characterController != null && characterController.isGrounded)
+            return true;
             
-//         // Backup raycast method
-//         Vector3 rayStart = transform.position + Vector3.up * 0.1f;
-//         return Physics.Raycast(rayStart, Vector3.down, groundCheckDistance);
-//     }
+        // Backup raycast method
+        Vector3 rayStart = transform.position + Vector3.up * 0.1f;
+        return Physics.Raycast(rayStart, Vector3.down, groundCheckDistance);
+    }
 
-// #if UNITY_EDITOR
-//     private void OnDrawGizmosSelected()
-//     {
-//         bool grounded = IsGrounded();
-//         Gizmos.color = grounded ? Color.green : Color.red;
-//         Vector3 rayStart = transform.position + Vector3.up * 0.1f;
-//         Gizmos.DrawRay(rayStart, Vector3.down * groundCheckDistance);
-//     }
-// #endif
+#if UNITY_EDITOR
+    private void OnDrawGizmosSelected()
+    {
+        bool grounded = IsGrounded();
+        Gizmos.color = grounded ? Color.green : Color.red;
+        Vector3 rayStart = transform.position + Vector3.up * 0.1f;
+        Gizmos.DrawRay(rayStart, Vector3.down * groundCheckDistance);
+    }
+#endif
 }

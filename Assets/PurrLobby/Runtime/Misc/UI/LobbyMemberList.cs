@@ -10,26 +10,8 @@ namespace PurrLobby
         [SerializeField] private MemberEntry memberEntryPrefab;
         [SerializeField] private Transform content;
 
-        private void Start()
-        {
-            EnsureContentAssigned();
-        }
-
-        public void EnsureContentAssigned()
-        {
-            if (content == null)
-            {
-                GameObject memberContentObj = GameObject.Find("MemberContent");
-                if (memberContentObj != null)
-                {
-                    content = memberContentObj.transform;
-                }
-            }
-        }
-
         public void LobbyDataUpdate(Lobby room)
         {
-            EnsureContentAssigned();
             if(!room.IsValid)
                 return;
 
@@ -40,9 +22,6 @@ namespace PurrLobby
 
         public void OnLobbyLeave()
         {
-            EnsureContentAssigned();
-            if (content == null) return;
-            
             foreach (Transform child in content)
                 Destroy(child.gameObject);
         }
