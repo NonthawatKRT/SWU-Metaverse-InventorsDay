@@ -1,141 +1,60 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using PurrNet;
 
 public class Updater : NetworkBehaviour
 {
-    [SerializeField] private GameObject[] characters; // Assign characters in the Inspector
-
+    [SerializeField] private GameObject[] characters;
     [SerializeField] private Avatar[] avatars;
-    [SerializeField] private Animator animators;
+    [SerializeField] private Animator animator;
 
-    private int currentCharacterIndex = 0;
+    private int currentCharacterIndex = -1;
 
     protected override void OnSpawned()
     {
-        if (!isOwner)
-            return;
+        // 🔁 Always refresh visuals when spawned (late join safe)
+        if (currentCharacterIndex >= 0)
+            ApplyCharacter(currentCharacterIndex);
 
-        int selectedIndex = CharacterManager.Instance.SelectedCharacterIndex;
-        SetCharacterIndex(selectedIndex);
-    }
-
-
-
-
-    private void ActivateSelectedCharacter()
-    {
-        if (!isOwner) return;
-
-        int selectedIndex = CharacterManager.Instance.SelectedCharacterIndex;
-        Debug.Log($"[Updater] Owner setting character index to: {selectedIndex}");
-
-        // Update local display
-        UpdateCharacterDisplay(selectedIndex);
-
-        // Notify all other players about the character change
-        UpdateCharacterIndexRpc(selectedIndex);
-    }
-
-    [ObserversRpc]
-    private void UpdateCharacterIndexRpc(int newCharacterIndex)
-    {
-        Debug.Log($"[Updater] Received character update: {newCharacterIndex} for player {owner?.id}");
-        currentCharacterIndex = newCharacterIndex;
-
-        // Update display for all players (including sender)
-        UpdateCharacterDisplay(newCharacterIndex);
-    }
-
-    private void UpdateCharacterDisplay(int selectedIndex)
-    {
-        Debug.Log($"[Updater] Updating character display to index: {selectedIndex} for player {owner?.id}");
-
-        // Validate index
-        if (selectedIndex < 0 || selectedIndex >= characters.Length)
+        // Owner tells host what they picked
+        if (isOwner)
         {
-            Debug.LogError($"[Updater] Invalid character index: {selectedIndex}");
-            return;
+            int selected = CharacterManager.Instance.SelectedCharacterIndex;
+            SetCharacterServerRpc(selected);
         }
-
-        // Disable all characters first
-        foreach (GameObject character in characters)
-        {
-            character.SetActive(false);
-        }
-
-        // Activate the selected character
-        characters[selectedIndex].SetActive(true);
-
-        // Update animator avatar
-        if (animators != null && selectedIndex < avatars.Length)
-        {
-            animators.avatar = avatars[selectedIndex];
-        }
-
-        currentCharacterIndex = selectedIndex;
     }
 
-    /// <summary>
-    /// Public method to update character selection (only works for owner)
-    /// </summary>
-    // public void SetCharacterIndex(int newIndex)
-    // {
-    //     if (!isOwner)
-    //     {
-    //         Debug.LogWarning("[Updater] Only the owner can change character selection");
-    //         return;
-    //     }
-
-    //     Debug.Log($"[Updater] Setting character index to: {newIndex}");
-    //     UpdateCharacterDisplay(newIndex);
-    //     UpdateCharacterIndexRpc(newIndex);
-    // }
-
-    public void SetCharacterIndex(int newIndex)
+    public void SetCharacterIndex(int index)
     {
         if (!isOwner)
             return;
 
-        Debug.Log($"[Updater] Owner requests character index: {newIndex}");
-
-        // Send request to server
-        SetCharacterIndexServerRpc(newIndex);
+        SetCharacterServerRpc(index);
     }
 
     [ServerRpc]
-    private void SetCharacterIndexServerRpc(int newIndex)
+    private void SetCharacterServerRpc(int index)
     {
-        Debug.Log($"[Updater] Server received character index: {newIndex} from {owner?.id}");
-
-        // Optional validation
-        if (newIndex < 0 || newIndex >= characters.Length)
+        if (index < 0 || index >= characters.Length)
             return;
 
-        currentCharacterIndex = newIndex;
+        currentCharacterIndex = index;
 
-        // Broadcast to everyone
-        UpdateCharacterIndexObserversRpc(newIndex);
+        SyncCharacterObserversRpc(index);
     }
 
     [ObserversRpc]
-    private void UpdateCharacterIndexObserversRpc(int newCharacterIndex)
+    private void SyncCharacterObserversRpc(int index)
     {
-        Debug.Log($"[Updater] Observers update index {newCharacterIndex} for player {owner?.id}");
-
-        currentCharacterIndex = newCharacterIndex;
-        UpdateCharacterDisplay(newCharacterIndex);
+        currentCharacterIndex = index;
+        ApplyCharacter(index);
     }
 
-
-
-
-    /// <summary>
-    /// Get the current character index
-    /// </summary>
-    public int GetCurrentCharacterIndex()
+    private void ApplyCharacter(int index)
     {
-        return currentCharacterIndex;
+        for (int i = 0; i < characters.Length; i++)
+            characters[i].SetActive(i == index);
+
+        if (animator != null && index < avatars.Length)
+            animator.avatar = avatars[index];
     }
 }
