@@ -140,24 +140,24 @@ namespace PurrLobby
                 PurrLogger.Log("[Lobby] Left lobby - resetting IsStarting flag");
                 OnRoomLeft?.Invoke();
             });
-            
+
             _currentProvider.OnLobbyUpdated += room => InvokeDelayed(() =>
             {
-                if(!_lastKnownState.HasChanged(room) || room.Members.Count <= 0 || !room.IsValid) return;
+                if (!_lastKnownState.HasChanged(room) || room.Members.Count <= 0 || !room.IsValid) return;
 
                 _lastKnownState = room;
                 _currentLobby = room;
-                
+
                 // Debug: Log player ready states
                 PurrLogger.Log($"[Lobby Update] Total players: {room.Members.Count}");
                 foreach (var member in room.Members)
                 {
                     PurrLogger.Log($"[Lobby] Player '{member.DisplayName}' (ID: {member.Id}) - Ready: {member.IsReady}");
                 }
-                
+
                 int readyCount = room.Members.FindAll(x => x.IsReady).Count;
                 PurrLogger.Log($"[Lobby] Ready: {readyCount}/{room.Members.Count}");
-                
+
                 OnRoomUpdated?.Invoke(room);
 
                 if (!IsStarting && room.Members.TrueForAll(x => x.IsReady))
@@ -170,12 +170,12 @@ namespace PurrLobby
 
             _currentProvider.OnLobbyPlayerListUpdated += players => InvokeDelayed(() => OnPlayerListUpdated.Invoke(players));
             _currentProvider.OnError += error => InvokeDelayed(() => OnError.Invoke(error));
-            
+
             _currentProvider.OnLobbyUpdated += room =>
             {
                 if (room.IsValid)
                 {
-                    InvokeDelayed(() => 
+                    InvokeDelayed(() =>
                     {
                         IsStarting = false; // Reset flag when joining a new room
                         PurrLogger.Log($"[Lobby] Player joined! Room ID: {room.LobbyId}, Players: {room.Members.Count}");
@@ -247,7 +247,7 @@ namespace PurrLobby
         {
             CreateRoom(createRoomArgs.maxPlayers, createRoomArgs.roomProperties.ToDictionary());
         }
-        
+
         /// <summary>
         /// Creates a room using custom settings set through code
         /// </summary>
@@ -299,7 +299,7 @@ namespace PurrLobby
                 OnRoomJoinFailed?.Invoke("Null or empty room ID.");
                 return;
             }
-            
+
             RunTask(async () =>
             {
                 EnsureProviderSet();
@@ -322,9 +322,9 @@ namespace PurrLobby
         /// <param name="filters">Filters to use for search - only works if the provider supports it</param>
         public void SearchLobbies(int maxRoomsToFind = 10, Dictionary<string, string> filters = null)
         {
-            if(filters == null)
+            if (filters == null)
                 filters = searchRoomArgs.ToDictionary();
-            
+
             RunTask(async () =>
             {
                 EnsureProviderSet();
@@ -332,7 +332,7 @@ namespace PurrLobby
                 OnRoomSearchResults?.Invoke(rooms);
             });
         }
-        
+
         /// <summary>
         /// Set's the given User to Ready
         /// </summary>
@@ -346,7 +346,7 @@ namespace PurrLobby
                 await _currentProvider.SetIsReadyAsync(userId, isReady);
             });
         }
-        
+
         /// <summary>
         /// Sets meta data on the current lobby we're in
         /// </summary>
@@ -360,13 +360,13 @@ namespace PurrLobby
                 await _currentProvider.SetLobbyDataAsync(key, value);
             });
         }
-        
+
         /// <summary>
         /// Gets meta data from the current lobby we're in
         /// </summary>
         /// <param name="key">Key/Identifier of the meta data we want</param>
         /// <returns>Value of the meta data we get</returns>
-        public async Task<String> GetLobbyData(string key) 
+        public async Task<String> GetLobbyData(string key)
         {
             EnsureProviderSet();
             return await _currentProvider.GetLobbyDataAsync(key);
@@ -382,14 +382,14 @@ namespace PurrLobby
                 PurrLogger.LogError($"Can't toggle ready state, current lobby is invalid.");
                 return;
             }
-            
+
             var localUserId = _currentProvider.GetLocalUserIdAsync().Result;
             if (string.IsNullOrEmpty(localUserId))
             {
                 PurrLogger.LogError($"Can't toggle ready state, local user ID is null or empty.");
                 return;
             }
-            
+
             var localLobbyUser = _currentLobby.Members.Find(x => x.Id == localUserId);
             SetIsReady(localUserId, !localLobbyUser.IsReady);
         }
@@ -403,7 +403,7 @@ namespace PurrLobby
         private async void CallOnAllReady()
         {
             await WaitForAllTasksAsync();
-            if(_currentLobby.IsValid && _currentLobby.Members.TrueForAll(x => x.IsReady))
+            if (_currentLobby.IsValid && _currentLobby.Members.TrueForAll(x => x.IsReady))
             {
                 PurrLogger.Log("[Lobby] Calling OnAllReady - All players confirmed ready!");
                 await _currentProvider.SetAllReadyAsync();
@@ -411,7 +411,7 @@ namespace PurrLobby
                 OnAllReady?.Invoke();
             }
         }
-        
+
         public async Task WaitForAllTasksAsync()
         {
             while (_taskLock > 0)
@@ -473,7 +473,7 @@ namespace PurrLobby
             public int maxPlayers = 5;
             public SerializableDictionary<string, string> roomProperties = null;
         }
-        
+
         [System.Serializable]
         public enum FriendFilter
         {
@@ -481,5 +481,27 @@ namespace PurrLobby
             Online,
             All
         }
+
+        /// <summary>
+        /// Explicitly sets the local player's ready state
+        /// </summary>
+        public void SetLocalReady(bool isReady)
+        {
+            if (!_currentLobby.IsValid)
+            {
+                PurrLogger.LogError("Can't set ready state, current lobby is invalid.");
+                return;
+            }
+
+            var localUserId = _currentProvider.GetLocalUserIdAsync().Result;
+            if (string.IsNullOrEmpty(localUserId))
+            {
+                PurrLogger.LogError("Can't set ready state, local user ID is null or empty.");
+                return;
+            }
+
+            SetIsReady(localUserId, isReady);
+        }
+
     }
 }
