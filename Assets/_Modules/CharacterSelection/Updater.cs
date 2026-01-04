@@ -12,14 +12,16 @@ public class Updater : NetworkBehaviour
 
     private int currentCharacterIndex = 0;
 
-    void Start()
+    protected override void OnSpawned()
     {
-        if (isOwner)
-        {
-            int selectedIndex = CharacterManager.Instance.SelectedCharacterIndex;
-            SetCharacterIndex(selectedIndex);
-        }
+        if (!isOwner)
+            return;
+
+        int selectedIndex = CharacterManager.Instance.SelectedCharacterIndex;
+        SetCharacterIndex(selectedIndex);
     }
+
+
 
 
     private void ActivateSelectedCharacter()

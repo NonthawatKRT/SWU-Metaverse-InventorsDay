@@ -20,37 +20,35 @@ public class PlayerIdentity : NetworkBehaviour
 
     public event System.Action<string> OnPlayerNameChanged;
 
-    private void Start()
+    protected override void OnSpawned()
     {
-        var identity = GetComponent<NetworkIdentity>();
+        if (!isOwner)
+            return;
 
-        if (identity != null && identity.isOwner)
+        if (PlayerData.Instance != null &&
+            !string.IsNullOrEmpty(PlayerData.Instance.UserName))
         {
-            if (PlayerData.Instance != null &&
-                !string.IsNullOrEmpty(PlayerData.Instance.UserName))
-            {
-                SendNameToServer(PlayerData.Instance.UserName);
-            }
+            SendNameToServer(PlayerData.Instance.UserName);
         }
     }
+
+
 
     // Client → Server
     [ServerRpc]
     private void SendNameToServer(string name)
     {
-        // ✅ Update host locally
-        PlayerName = name;
-
-        // ✅ Update all clients
+        PlayerName = name; // server state
         BroadcastName(name);
     }
 
-    // Server → Clients ONLY (not host)
     [ObserversRpc]
     private void BroadcastName(string name)
     {
+        if (isServer) return; // prevent double apply on host
         PlayerName = name;
     }
+
 
     public bool IsLocalPlayer()
     {
