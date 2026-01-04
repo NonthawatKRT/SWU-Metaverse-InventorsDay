@@ -105,8 +105,6 @@ namespace StarterAssets
             {
                 base.OnSpawned();
 
-                // enabled = isOwner;
-
                 if (!isOwner)
                 {
                     Destroy(_mainCamera);
@@ -117,6 +115,8 @@ namespace StarterAssets
                 {
                     playerInput.SwitchCurrentControlScheme("KeyboardMouse", Keyboard.current, Mouse.current);
                 }
+
+                enabled = isOwner;
             }
 
 #if ENABLE_INPUT_SYSTEM 
