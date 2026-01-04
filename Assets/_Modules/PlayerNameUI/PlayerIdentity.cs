@@ -5,34 +5,54 @@ public class PlayerIdentity : NetworkBehaviour
 {
     [SerializeField] private string playerName;
 
-    public string PlayerName => playerName;
+    public string PlayerName
+    {
+        get => playerName;
+        private set
+        {
+            if (playerName != value)
+            {
+                playerName = value;
+                OnPlayerNameChanged?.Invoke(value);
+            }
+        }
+    }
 
     public event System.Action<string> OnPlayerNameChanged;
 
     protected override void OnSpawned()
     {
-        // Refresh UI for late join / scene reload
-        if (!string.IsNullOrEmpty(playerName))
-            OnPlayerNameChanged?.Invoke(playerName);
+        if (!isOwner)
+            return;
 
-        // Owner sends name to host
-        if (isOwner && PlayerData.Instance != null)
+        if (PlayerData.Instance != null &&
+            !string.IsNullOrEmpty(PlayerData.Instance.UserName))
         {
-            SetNameServerRpc(PlayerData.Instance.UserName);
+            SendNameToServer(PlayerData.Instance.UserName);
         }
     }
 
+
+
+    // Client → Server
     [ServerRpc]
-    private void SetNameServerRpc(string name)
+    private void SendNameToServer(string name)
     {
-        playerName = name;
-        SyncNameObserversRpc(name);
+        PlayerName = name; // server state
+        BroadcastName(name);
     }
 
     [ObserversRpc]
-    private void SyncNameObserversRpc(string name)
+    private void BroadcastName(string name)
     {
-        playerName = name;
-        OnPlayerNameChanged?.Invoke(name);
+        if (isServer) return; // prevent double apply on host
+        PlayerName = name;
+    }
+
+
+    public bool IsLocalPlayer()
+    {
+        var identity = GetComponent<NetworkIdentity>();
+        return identity != null && identity.isOwner;
     }
 }
