@@ -12,11 +12,11 @@ public class CharacterManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject); // Persist across scenes
+            DontDestroyOnLoad(this.gameObject); // Persist across scenes
         }
         else
         {
-            Destroy(gameObject); // Prevent duplicates
+            Destroy(this.gameObject); // Prevent duplicates
         }
     }
 
