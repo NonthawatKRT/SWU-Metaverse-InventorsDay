@@ -10,6 +10,7 @@ public class LostConnect : MonoBehaviour
     [SerializeField] private GameObject lostconnectcamera;
     
     private bool hasExited = false;
+    private Coroutine waitingToExitCoroutine = null;
 
     private void Awake()
     {
@@ -29,9 +30,39 @@ public class LostConnect : MonoBehaviour
         
         if (cameras.Length == 0)
         {
-            PurrNet.Logging.PurrLogger.LogWarning("[LostConnect] No cameras found in scene - exiting lobby");
+            // If not already waiting to exit, start the delay
+            if (waitingToExitCoroutine == null)
+            {
+                PurrNet.Logging.PurrLogger.LogWarning("[LostConnect] No cameras found in scene - waiting 2 seconds before exiting lobby");
+                waitingToExitCoroutine = StartCoroutine(WaitBeforeExit());
+            }
+        }
+        else
+        {
+            // Cameras are back, cancel the exit if we were waiting
+            if (waitingToExitCoroutine != null)
+            {
+                PurrNet.Logging.PurrLogger.Log("[LostConnect] Cameras detected again - cancelling exit");
+                StopCoroutine(waitingToExitCoroutine);
+                waitingToExitCoroutine = null;
+            }
+        }
+    }
+
+    private IEnumerator WaitBeforeExit()
+    {
+        // Wait for 2 seconds
+        yield return new WaitForSeconds(2f);
+        
+        // Check again if cameras are still missing
+        Camera[] cameras = FindObjectsOfType<Camera>();
+        if (cameras.Length == 0)
+        {
+            PurrNet.Logging.PurrLogger.LogWarning("[LostConnect] Still no cameras after 2 seconds - exiting lobby");
             Exitlobby();
         }
+        
+        waitingToExitCoroutine = null;
     }
 
     public void Exitlobby()

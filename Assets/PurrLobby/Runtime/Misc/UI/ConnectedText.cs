@@ -13,6 +13,7 @@ namespace PurrLobby
         [SerializeField] private TMP_Text connectedText;
         [SerializeField] private GameObject loadingCanvas;
         [SerializeField] private GameObject loadingCamera;
+        // [SerializeField] private QuestManager questManager;
 
         private void Awake()
         {
@@ -49,6 +50,8 @@ namespace PurrLobby
                 loadingCanvas.SetActive(false);
             if (loadingCamera != null)
                 loadingCamera.SetActive(false);
+            // if (questManager != null)
+            //     questManager.AdvanceToNextQuest();
         }
 
         private WaitForSeconds _wait = new(0.1f);

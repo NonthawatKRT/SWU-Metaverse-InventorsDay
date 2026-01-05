@@ -8,6 +8,9 @@ public class DialogTrigger : MonoBehaviour
     public string dialogText = "Hello there! Welcome to our world. Feel free to explore and interact with everything around you.";
     public Sprite characterSprite;
     public int currentLineIndex = 0;
+    public QuestManager questManager;
+    public int questToAdvance = 0; // The quest index to advance to after dialog
+    public GameObject SpotPointVFX;
 
     private bool hasTriggered = false;
 
@@ -23,6 +26,7 @@ public class DialogTrigger : MonoBehaviour
         if (other.CompareTag("Player") && !hasTriggered)
         {
             hasTriggered = true;
+            SpotPointVFX.SetActive(false);
             DialogManager dialogManager = FindObjectOfType<DialogManager>();
             if (dialogManager != null && currentLineIndex < dialogLines.Count)
             {
@@ -40,6 +44,16 @@ public class DialogTrigger : MonoBehaviour
             {
                 dialogManager.ShowDialog(characterName, dialogLines[currentLineIndex], characterSprite, this);
                 currentLineIndex++;
+                
+                // Dialog ended - advance quest when all lines are complete
+                if (currentLineIndex >= dialogLines.Count)
+                {
+                    if (questManager != null && questToAdvance > 0)
+                    {
+                        questManager.currentQuest = (QuestManager.Quest)questToAdvance;
+                        questManager.UpdateQuestUI();
+                    }
+                }
             }
         }
     }

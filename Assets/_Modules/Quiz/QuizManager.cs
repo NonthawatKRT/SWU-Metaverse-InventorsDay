@@ -1,13 +1,21 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using PurrNet;
 
-public class QuizManager : MonoBehaviour
+public class QuizManager : NetworkBehaviour
 {
     [Header("Quiz Settings")]
     [SerializeField] private int currentQuestionIndex = 0;
     [SerializeField] private int score = 0;
     [SerializeField] private int totalQuestions = 0;
+    
+    [Header("Network Sync")]
+    [SerializeField] private int playersAnsweredCorrectly = 0;
+    private int totalPlayersInLobby = 0;
+    
+    [Header("References")]
+    [SerializeField] private QuestManager questManager;
     
     [Header("UI References")]
     [SerializeField] private GameObject quizUI;
@@ -85,7 +93,17 @@ public class QuizManager : MonoBehaviour
         totalQuestions = 0;
         usedQuestions.Clear();
         quizUI.SetActive(false);
-        Debug.Log("Quiz Manager initialized. Call ShowRandomQuestion() to start.");
+        
+        // Find QuestManager if not assigned
+        if (questManager == null)
+        {
+            questManager = FindObjectOfType<QuestManager>();
+        }
+        
+        // Get total players in lobby
+        totalPlayersInLobby = NetworkManager.main.players.Count;
+        
+        Debug.Log("Quiz Manager initialized. Total players: " + totalPlayersInLobby);
     }
 
     public void ShowRandomQuestion()
@@ -170,19 +188,26 @@ public class QuizManager : MonoBehaviour
             score++;
             Debug.Log("✅ CORRECT! Player selected: " + selectedAnswer);
             Debug.Log("Current Score: " + score + "/" + totalQuestions);
+            
+            // Notify server about correct answer
+            NotifyCorrectAnswerServerRpc();
+            
+            Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Locked;
+            // Close quiz UI after correct answer
+            quizUI.SetActive(false);
+            Debug.Log("Quiz UI closed after correct answer");
         }
         else
         {
             Debug.Log("❌ WRONG! Player selected: " + selectedAnswer);
             Debug.Log("Correct answer was: " + currentCorrectAnswer);
             Debug.Log("Current Score: " + score + "/" + totalQuestions);
+            
+            // Show another random question if wrong
+            Debug.Log("Showing another random question...");
+            ShowRandomQuestion();
         }
-        
-        Cursor.visible = false;
-        Cursor.lockState = CursorLockMode.Locked;
-        // Close quiz UI immediately after answering
-        quizUI.SetActive(false);
-        Debug.Log("Quiz UI closed after answering");
     }
     
     // Method to manually show a specific question by index
@@ -238,6 +263,41 @@ public class QuizManager : MonoBehaviour
     public int GetTotalQuestions()
     {
         return totalQuestions;
+    }
+    
+    // Network RPC Methods
+    [ServerRpc(requireOwnership = false)]
+    private void NotifyCorrectAnswerServerRpc()
+    {
+        playersAnsweredCorrectly++;
+        Debug.Log($"[Server] Player answered correctly. Progress: {playersAnsweredCorrectly}/{totalPlayersInLobby}");
+        
+        // Check if all players have answered correctly
+        if (playersAnsweredCorrectly >= totalPlayersInLobby)
+        {
+            Debug.Log("[Server] All players answered correctly! Calling RepairServer...");
+            
+            // Call RepairServer in QuestManager
+            if (questManager != null)
+            {
+                questManager.RepairServer();
+            }
+            else
+            {
+                Debug.LogError("[Server] QuestManager reference is null!");
+            }
+            
+            // Reset the counter for next quiz
+            playersAnsweredCorrectly = 0;
+        }
+    }
+    
+    // Method to manually reset the correct answer counter (if needed)
+    [ServerRpc(requireOwnership = false)]
+    public void ResetCorrectAnswerCountServerRpc()
+    {
+        playersAnsweredCorrectly = 0;
+        Debug.Log("[Server] Correct answer counter reset.");
     }
 
 }
