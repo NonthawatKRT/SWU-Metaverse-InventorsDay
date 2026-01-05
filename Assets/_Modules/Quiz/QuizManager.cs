@@ -266,7 +266,7 @@ public class QuizManager : NetworkBehaviour
     }
     
     // Network RPC Methods
-    [ServerRpc(requireOwnership = false)]
+    [ServerRpc]
     private void NotifyCorrectAnswerServerRpc()
     {
         playersAnsweredCorrectly++;
@@ -293,7 +293,7 @@ public class QuizManager : NetworkBehaviour
     }
     
     // Method to manually reset the correct answer counter (if needed)
-    [ServerRpc(requireOwnership = false)]
+    [ServerRpc]
     public void ResetCorrectAnswerCountServerRpc()
     {
         playersAnsweredCorrectly = 0;
